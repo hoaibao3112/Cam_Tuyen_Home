@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase-client'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 const SHOP_SLUG = process.env.NEXT_PUBLIC_SHOP_SLUG || 'demo'
@@ -24,6 +26,8 @@ const emptyForm = {
 }
 
 export default function AdminPage() {
+  const router = useRouter()
+  const supabase = createClient()
   const [items, setItems] = useState<MenuItem[]>([])
   const [form, setForm] = useState(emptyForm)
   const [editId, setEditId] = useState<string | null>(null)
@@ -99,11 +103,34 @@ export default function AdminPage() {
     setEditId(null)
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/admin/dangnhap')
+    router.refresh()
+  }
+
   return (
     <main style={{ maxWidth: 640, margin: '0 auto', padding: '24px 16px', fontFamily: 'sans-serif' }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 24 }}>
-        🍽️ Quản lý thực đơn
-      </h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>
+          🍽️ Quản lý thực đơn
+        </h1>
+        <button
+          onClick={handleLogout}
+          style={{
+            background: '#fee2e2',
+            color: '#dc2626',
+            border: 'none',
+            borderRadius: 6,
+            padding: '8px 16px',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          Đăng xuất
+        </button>
+      </div>
 
       {/* Form thêm / sửa */}
       <div style={{ background: '#f9f9f9', borderRadius: 12, padding: 20, marginBottom: 32, border: '1px solid #eee' }}>
