@@ -29,18 +29,18 @@ export async function middleware(request: NextRequest) {
   )
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // Protect /admin routes (except /admin/dangnhap)
   if (request.nextUrl.pathname.startsWith('/admin') && !request.nextUrl.pathname.startsWith('/admin/dangnhap')) {
-    if (!session) {
+    if (!user) {
       return NextResponse.redirect(new URL('/admin/dangnhap', request.url))
     }
   }
 
   // Redirect to /admin if already logged in and trying to access /admin/dangnhap
-  if (request.nextUrl.pathname === '/admin/dangnhap' && session) {
+  if (request.nextUrl.pathname === '/admin/dangnhap' && user) {
     return NextResponse.redirect(new URL('/admin', request.url))
   }
 

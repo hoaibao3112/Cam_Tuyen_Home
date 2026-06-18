@@ -6,10 +6,16 @@ export class SupabaseService {
   private client: SupabaseClient
 
   constructor() {
-    this.client = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_KEY,
-    )
+    const url = process.env.SUPABASE_URL
+    const key = process.env.SUPABASE_KEY
+
+    if (!url || !key) {
+      throw new Error(
+        'Thiếu biến môi trường: SUPABASE_URL và SUPABASE_KEY là bắt buộc',
+      )
+    }
+
+    this.client = createClient(url, key)
   }
 
   get db(): SupabaseClient {

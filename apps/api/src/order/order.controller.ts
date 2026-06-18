@@ -1,13 +1,6 @@
 import { Controller, Post, Body } from '@nestjs/common'
 import { OrderService } from './order.service'
-
-export class CreateOrderDto {
-  shop_slug: string
-  customer_name: string
-  customer_phone: string
-  items: { menu_item_id: string; quantity: number; name: string; price: number }[]
-  note?: string
-}
+import { CreateOrderDto } from './dto/create-order.dto'
 
 @Controller('orders')
 export class OrderController {

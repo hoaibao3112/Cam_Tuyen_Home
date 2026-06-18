@@ -1,20 +1,26 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, BadRequestException } from '@nestjs/common'
 import { SupabaseService } from '../supabase/supabase.service'
+import { CreateOrderDto } from './dto/create-order.dto'
 import axios from 'axios'
 
 @Injectable()
 export class OrderService {
   constructor(private readonly supabase: SupabaseService) {}
 
-  async createOrder(dto: any) {
-    // 1. Tạo mã đơn hàng
+  async createOrder(dto: CreateOrderDto) {
+    // 1. Validate items không rỗng
+    if (!dto.items || dto.items.length === 0) {
+      throw new BadRequestException('Đơn hàng phải có ít nhất 1 món')
+    }
+
+    // 2. Tạo mã đơn hàng
     const orderCode = `DH${Date.now()}`
     const total = dto.items.reduce(
-      (sum: number, item: any) => sum + item.price * item.quantity,
+      (sum, item) => sum + item.price * item.quantity,
       0,
     )
 
-    // 2. Lưu vào Supabase
+    // 3. Lưu vào Supabase
     const { data: order, error } = await this.supabase.db
       .from('orders')
       .insert({
@@ -30,24 +36,42 @@ export class OrderService {
       .select()
       .single()
 
-    if (error) throw new Error('Lỗi lưu đơn hàng')
+    if (error) throw new BadRequestException('Lỗi lưu đơn hàng: ' + error.message)
 
-    // 3. Gửi tin nhắn vào inbox Page qua Messenger API
-    await this.sendMessengerNotification(dto, orderCode, total)
+    // 4. Gửi thông báo Messenger (fire-and-forget, không block response)
+    this.sendMessengerNotification(dto, orderCode, total).catch((err) =>
+      console.error('Messenger notification failed:', err.message),
+    )
 
-    // 4. Trả về link mở Messenger cho khách
+    // 5. Trả về link mở Messenger cho khách
     const messengerUrl = `https://m.me/${process.env.FB_PAGE_ID}?ref=order_${orderCode}`
 
     return {
       success: true,
       order_code: orderCode,
+      total_price: total,
       messenger_url: messengerUrl,
     }
   }
 
-  private async sendMessengerNotification(dto: any, orderCode: string, total: number) {
+  private async sendMessengerNotification(
+    dto: CreateOrderDto,
+    orderCode: string,
+    total: number,
+  ) {
+    const pageAccessToken = process.env.FB_PAGE_ACCESS_TOKEN
+    const pageInboxPsid = process.env.FB_ADMIN_PSID // PSID của tài khoản admin nhận thông báo
+
+    if (!pageAccessToken || !pageInboxPsid) {
+      console.warn('Thiếu FB_PAGE_ACCESS_TOKEN hoặc FB_ADMIN_PSID — bỏ qua gửi Messenger')
+      return
+    }
+
     const itemsList = dto.items
-      .map((i: any) => `• ${i.name} x${i.quantity} — ${(i.price * i.quantity).toLocaleString('vi-VN')}đ`)
+      .map(
+        (i) =>
+          `• ${i.name} x${i.quantity} — ${(i.price * i.quantity).toLocaleString('vi-VN')}đ`,
+      )
       .join('\n')
 
     const message =
@@ -60,19 +84,15 @@ export class OrderService {
       `💰 Tổng: ${total.toLocaleString('vi-VN')}đ\n` +
       (dto.note ? `📝 Ghi chú: ${dto.note}` : '')
 
-    try {
-      await axios.post(
-        `https://graph.facebook.com/v19.0/me/messages`,
-        {
-          recipient: { id: process.env.FB_PAGE_ID },
-          message: { text: message },
-        },
-        {
-          params: { access_token: process.env.FB_PAGE_ACCESS_TOKEN },
-        },
-      )
-    } catch (err) {
-      console.error('Lỗi gửi Messenger:', err.message)
-    }
+    await axios.post(
+      `https://graph.facebook.com/v19.0/me/messages`,
+      {
+        recipient: { id: pageInboxPsid }, // Phải là PSID của admin, không phải Page ID
+        message: { text: message },
+      },
+      {
+        params: { access_token: pageAccessToken },
+      },
+    )
   }
 }
