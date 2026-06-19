@@ -30,8 +30,8 @@ export async function bootstrapNest() {
   return server
 }
 
-// Khởi chạy local ở môi trường dev
-if (process.env.NODE_ENV !== 'production') {
+// Khởi chạy local ở môi trường dev hoặc chạy standalone trên Render
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   const port = process.env.PORT || 3001
   NestFactory.create(AppModule).then(async (app) => {
     app.useGlobalPipes(
@@ -42,10 +42,10 @@ if (process.env.NODE_ENV !== 'production') {
       }),
     )
     app.enableCors({
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: process.env.FRONTEND_URL || '*',
     })
     await app.listen(port)
-    console.log(`API đang chạy tại http://localhost:${port}`)
+    console.log(`API đang chạy tại cổng ${port}`)
   })
 }
 
