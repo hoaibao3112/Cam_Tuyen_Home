@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { MenuItem } from './page'
 import OrderPanel from './OrderPanel'
+import Image from 'next/image'
 
 export interface CartItem extends MenuItem {
   quantity: number
@@ -108,7 +109,7 @@ export default function MenuClient({
           {/* Grid món ăn */}
           <div className="flex-1 overflow-y-auto p-4">
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {filtered.map((item) => {
+              {filtered.map((item, index) => {
                 const qty = getQty(item.id)
                 return (
                   <div
@@ -118,10 +119,13 @@ export default function MenuClient({
                     {/* Ảnh món */}
                     <div className="relative aspect-[4/3] bg-[#222]">
                       {item.image_url ? (
-                        <img
+                        <Image
                           src={item.image_url}
                           alt={item.name}
+                          width={300}
+                          height={225}
                           className="w-full h-full object-cover"
+                          priority={index < 4}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-4xl">

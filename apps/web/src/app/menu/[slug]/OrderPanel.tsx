@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { CartItem, MenuItem } from './MenuClient'
+import { CartItem } from './MenuClient'
+import { MenuItem } from './page'
+import tienGiangData from '@/lib/tien-giang.json'
 
 interface Props {
   cart: CartItem[]
@@ -23,12 +25,27 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
   const [messengerUrl, setMessengerUrl] = useState('')
   const [error, setError] = useState('')
 
+  const [district, setDistrict] = useState('')
+  const [ward, setWard] = useState('')
+  const [street, setStreet] = useState('')
+
   const total = cart.reduce((s, i) => s + i.price * i.quantity, 0)
   const totalQty = cart.reduce((s, i) => s + i.quantity, 0)
+
+  const wardsList = tienGiangData.find((d) => d.name === district)?.wards || []
+
+  const handleDistrictChange = (value: string) => {
+    setDistrict(value)
+    setWard('')
+  }
 
   async function handleSubmit() {
     if (!name.trim() || !phone.trim()) {
       setError('Vui lòng nhập tên và số điện thoại')
+      return
+    }
+    if (!district || !ward) {
+      setError('Vui lòng chọn Quận/Huyện và Phường/Xã ở Tiền Giang')
       return
     }
     setError('')
@@ -44,6 +61,9 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
             customer_name: name.trim(),
             customer_phone: phone.trim(),
             note: note.trim(),
+            address_district: district,
+            address_ward: ward,
+            address_street: street.trim(),
             items: cart.map((c) => ({
               menu_item_id: c.id,
               name: c.name,
@@ -202,6 +222,59 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="0901 234 567"
+              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-xl px-4 py-3 text-sm placeholder-gray-600 focus:outline-none focus:border-[#E85D24] transition-colors"
+            />
+          </div>
+
+          {/* Chọn Quận/Huyện */}
+          <div>
+            <label className="text-gray-400 text-xs font-semibold uppercase tracking-wide block mb-1.5">
+              Quận / Huyện (Tiền Giang) *
+            </label>
+            <select
+              value={district}
+              onChange={(e) => handleDistrictChange(e.target.value)}
+              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#E85D24] transition-colors cursor-pointer"
+            >
+              <option value="">-- Chọn Quận/Huyện --</option>
+              {tienGiangData.map((d) => (
+                <option key={d.code} value={d.name}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Chọn Phường/Xã */}
+          <div>
+            <label className="text-gray-400 text-xs font-semibold uppercase tracking-wide block mb-1.5">
+              Phường / Xã *
+            </label>
+            <select
+              value={ward}
+              onChange={(e) => setWard(e.target.value)}
+              disabled={!district}
+              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#E85D24] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <option value="">-- Chọn Phường/Xã --</option>
+              {wardsList.map((w) => (
+                <option key={w} value={w}>
+                  {w}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Địa chỉ chi tiết */}
+          <div>
+            <label className="text-gray-400 text-xs font-semibold uppercase tracking-wide block mb-1.5">
+              Số nhà, tên đường (tùy chọn)
+            </label>
+            <input
+              type="text"
+              value={street}
+              onChange={(e) => setStreet(e.target.value)}
+              placeholder="Ví dụ: 123 Lê Lợi"
               className="w-full bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-xl px-4 py-3 text-sm placeholder-gray-600 focus:outline-none focus:border-[#E85D24] transition-colors"
             />
           </div>

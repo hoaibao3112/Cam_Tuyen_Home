@@ -1,9 +1,16 @@
 import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
 import { AppModule } from './app.module'
+import { ExpressAdapter } from '@nestjs/platform-express'
+import * as express from 'express'
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+const server = express()
+let isInitialized = false
+
+export async function bootstrapNest() {
+  if (isInitialized) return server
+
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(server))
 
   // Validate tất cả request body tự động theo DTO
   app.useGlobalPipes(
@@ -15,10 +22,36 @@ async function bootstrap() {
   )
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: '*', // Hỗ trợ CORS cho Vercel
   })
 
-  await app.listen(process.env.PORT || 3001)
-  console.log(`API đang chạy tại http://localhost:${process.env.PORT || 3001}`)
+  await app.init()
+  isInitialized = true
+  return server
 }
-bootstrap()
+
+// Khởi chạy local ở môi trường dev
+if (process.env.NODE_ENV !== 'production') {
+  const port = process.env.PORT || 3001
+  NestFactory.create(AppModule).then(async (app) => {
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    )
+    app.enableCors({
+      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    })
+    await app.listen(port)
+    console.log(`API đang chạy tại http://localhost:${port}`)
+  })
+}
+
+// Export default handler phục vụ Vercel Serverless
+export default async (req: any, res: any) => {
+  await bootstrapNest()
+  server(req, res)
+}
+

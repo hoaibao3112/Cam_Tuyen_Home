@@ -39,4 +39,17 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   note?: string
+
+  @IsString()
+  @IsNotEmpty()
+  address_district: string
+
+  @IsString()
+  @IsNotEmpty()
+  address_ward: string
+
+  @IsOptional()
+  @IsString()
+  address_street?: string
 }
+

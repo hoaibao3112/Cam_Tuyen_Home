@@ -20,6 +20,10 @@ export class OrderService {
       0,
     )
 
+    // Ghép địa chỉ chi tiết
+    const fullAddress = `${dto.address_street ? dto.address_street + ', ' : ''}${dto.address_ward}, ${dto.address_district}, Tiền Giang`
+    const noteWithAddress = `[Địa chỉ: ${fullAddress}]${dto.note ? ' - Ghi chú: ' + dto.note : ''}`
+
     // 3. Lưu vào Supabase
     const { data: order, error } = await this.supabase.db
       .from('orders')
@@ -30,7 +34,7 @@ export class OrderService {
         customer_phone: dto.customer_phone,
         items: dto.items,
         total_price: total,
-        note: dto.note || '',
+        note: noteWithAddress,
         status: 'pending',
       })
       .select()
@@ -41,6 +45,11 @@ export class OrderService {
     // 4. Gửi thông báo Messenger (fire-and-forget, không block response)
     this.sendMessengerNotification(dto, orderCode, total).catch((err) =>
       console.error('Messenger notification failed:', err.message),
+    )
+
+    // Gửi thông báo Telegram (fire-and-forget, không block response)
+    this.sendTelegramNotification(dto, orderCode, total).catch((err) =>
+      console.error('Telegram notification failed:', err.message),
     )
 
     // 5. Trả về link mở Messenger cho khách
@@ -74,10 +83,13 @@ export class OrderService {
       )
       .join('\n')
 
+    const fullAddress = `${dto.address_street ? dto.address_street + ', ' : ''}${dto.address_ward}, ${dto.address_district}, Tiền Giang`
+
     const message =
       `🛎️ ĐƠN HÀNG MỚI - ${orderCode}\n` +
       `👤 Khách: ${dto.customer_name}\n` +
       `📞 SĐT: ${dto.customer_phone}\n` +
+      `📍 Địa chỉ: ${fullAddress}\n` +
       `───────────────\n` +
       `${itemsList}\n` +
       `───────────────\n` +
@@ -89,6 +101,182 @@ export class OrderService {
       {
         recipient: { id: pageInboxPsid }, // Phải là PSID của admin, không phải Page ID
         message: { text: message },
+      },
+      {
+        params: { access_token: pageAccessToken },
+      },
+    )
+  }
+
+  private async sendTelegramNotification(
+    dto: CreateOrderDto,
+    orderCode: string,
+    total: number,
+  ) {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN
+    const chatId = process.env.TELEGRAM_CHAT_ID
+
+    if (!botToken || !chatId) {
+      console.warn('Thiếu TELEGRAM_BOT_TOKEN hoặc TELEGRAM_CHAT_ID — bỏ qua gửi Telegram')
+      return
+    }
+
+    const escapeHtml = (text: string) => {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+    }
+
+    const nameEscaped = escapeHtml(dto.customer_name)
+    const phoneEscaped = escapeHtml(dto.customer_phone)
+    const noteEscaped = dto.note ? escapeHtml(dto.note) : ''
+    
+    const fullAddress = `${dto.address_street ? dto.address_street + ', ' : ''}${dto.address_ward}, ${dto.address_district}, Tiền Giang`
+    const addressEscaped = escapeHtml(fullAddress)
+
+    const itemsList = dto.items
+      .map(
+        (i) =>
+          `• ${escapeHtml(i.name)} x${i.quantity} — <b>${(i.price * i.quantity).toLocaleString('vi-VN')}đ</b>`,
+      )
+      .join('\n')
+
+    const message =
+      `🛎️ <b>ĐƠN HÀNG MỚI - ${orderCode}</b>\n` +
+      `👤 <b>Khách:</b> ${nameEscaped}\n` +
+      `📞 <b>SĐT:</b> ${phoneEscaped}\n` +
+      `📍 <b>Địa chỉ:</b> ${addressEscaped}\n` +
+      `───────────────\n` +
+      `${itemsList}\n` +
+      `───────────────\n` +
+      `💰 <b>Tổng:</b> ${total.toLocaleString('vi-VN')}đ\n` +
+      (noteEscaped ? `📝 <b>Ghi chú:</b> <i>${noteEscaped}</i>` : '')
+
+    await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      chat_id: chatId,
+      text: message,
+      parse_mode: 'HTML',
+    })
+  }
+
+  async verifyWebhook(mode: string, token: string, challenge: string): Promise<string> {
+    const verifyToken = process.env.FB_VERIFY_TOKEN
+    if (mode === 'subscribe' && token === verifyToken) {
+      return challenge
+    }
+    throw new BadRequestException('Forbidden')
+  }
+
+  async handleWebhookPayload(body: any): Promise<void> {
+    if (body.object !== 'page') {
+      return
+    }
+
+    const entries = body.entry || []
+    for (const entry of entries) {
+      const messagingEvents = entry.messaging || []
+      for (const event of messagingEvents) {
+        const senderPsid = event.sender?.id
+        if (!senderPsid) continue
+
+        let ref: string | undefined
+
+        // 1. Check direct referral event (if user already had chat history)
+        if (event.referral && event.referral.ref) {
+          ref = event.referral.ref
+        }
+        // 2. Check referral inside postback event (e.g. "Get Started" click)
+        else if (event.postback && event.postback.referral && event.postback.referral.ref) {
+          ref = event.postback.referral.ref
+        }
+
+        if (ref && ref.startsWith('order_')) {
+          const orderCode = ref.replace('order_', '')
+          await this.handleFacebookReferralOrder(senderPsid, orderCode)
+        }
+      }
+    }
+  }
+
+  private async handleFacebookReferralOrder(senderPsid: string, orderCode: string) {
+    try {
+      console.log(`Nhận sự kiện referral từ FB PSID: ${senderPsid} cho mã đơn: ${orderCode}`)
+
+      // 1. Truy vấn đơn hàng từ Supabase
+      const { data: order, error } = await this.supabase.db
+        .from('orders')
+        .select('*')
+        .eq('order_code', orderCode)
+        .single()
+
+      if (error || !order) {
+        console.warn(`Không tìm thấy đơn hàng với mã ${orderCode} hoặc lỗi DB:`, error?.message)
+        return
+      }
+
+      // 2. Trích xuất địa chỉ và ghi chú từ cột `note`
+      let address = 'Không xác định'
+      let note = ''
+      if (order.note) {
+        const addressMatch = order.note.match(/\[Địa chỉ: (.*?)\]/)
+        if (addressMatch) {
+          address = addressMatch[1]
+        } else {
+          address = order.note
+        }
+        
+        const noteMatch = order.note.match(/ - Ghi chú: (.*)$/)
+        if (noteMatch) {
+          note = noteMatch[1]
+        }
+      }
+
+      // 3. Tạo danh sách các món ăn
+      const items = (order.items || []) as any[]
+      const itemsList = items
+        .map(
+          (i) =>
+            `• ${i.name} x${i.quantity} — ${(i.price * i.quantity).toLocaleString('vi-VN')}đ`,
+        )
+        .join('\n')
+
+      // 4. Định dạng tin nhắn gửi cho khách hàng
+      const message =
+        `🌸 Cảm ơn bạn đã đặt hàng tại YNuQuan Healthy!\n\n` +
+        `Đơn hàng của bạn đã được tiếp nhận thành công.\n` +
+        `🏷️ Mã đơn: ${order.order_code}\n` +
+        `👤 Người nhận: ${order.customer_name}\n` +
+        `📞 SĐT: ${order.customer_phone}\n` +
+        `📍 Địa chỉ giao: ${address}\n` +
+        `───────────────────\n` +
+        `${itemsList}\n` +
+        `───────────────────\n` +
+        `💰 Tổng tiền thanh toán: ${order.total_price.toLocaleString('vi-VN')}đ\n` +
+        (note ? `📝 Ghi chú: ${note}\n` : '') +
+        `\n` +
+        `Nhân viên cửa hàng sẽ liên hệ xác nhận cuộc gọi và giao hàng cho bạn trong thời gian sớm nhất!`
+
+      // 5. Gửi tin nhắn
+      await this.sendMessengerMessage(senderPsid, message)
+      console.log(`Đã gửi tin nhắn xác nhận đơn ${orderCode} tới FB PSID ${senderPsid}`)
+    } catch (err) {
+      console.error(`Lỗi xử lý Facebook Referral cho đơn ${orderCode}:`, err.message)
+    }
+  }
+
+  private async sendMessengerMessage(recipientPsid: string, text: string) {
+    const pageAccessToken = process.env.FB_PAGE_ACCESS_TOKEN
+    if (!pageAccessToken) {
+      console.warn('Thiếu FB_PAGE_ACCESS_TOKEN — bỏ qua gửi tin nhắn Messenger')
+      return
+    }
+
+    await axios.post(
+      `https://graph.facebook.com/v19.0/me/messages`,
+      {
+        recipient: { id: recipientPsid },
+        message: { text },
       },
       {
         params: { access_token: pageAccessToken },
