@@ -10,6 +10,13 @@ const nextConfig = {
       },
     ],
   },
+  webpack: (config, { dev }) => {
+    if (dev) {
+      // Tắt cache webpack ở môi trường dev để tránh lỗi ENOENT trên Windows/Monorepo
+      config.cache = false;
+    }
+    return config;
+  },
 }
 
 module.exports = nextConfig

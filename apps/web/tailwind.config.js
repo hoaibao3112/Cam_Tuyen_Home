@@ -11,6 +11,10 @@ module.exports = {
         primary: '#E85D24',
         'primary-dark': '#C44A18',
       },
+      fontFamily: {
+        playball: ['var(--font-playball)', 'cursive'],
+        dancing: ['var(--font-dancing)', 'cursive'],
+      },
     },
   },
   plugins: [
