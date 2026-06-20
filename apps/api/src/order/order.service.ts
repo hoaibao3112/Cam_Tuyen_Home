@@ -92,7 +92,7 @@ export class OrderService {
       : `${dto.address_street ? dto.address_street + ', ' : ''}${dto.address_ward}, ${dto.address_district}, Tiền Giang`
 
     const message =
-      `🔔 Y NÙ QUÁN - ĐƠN HÀNG MỚI 🔔\n\n` +
+      `Ý Nù Quán xác nhận đơn hàng của Anh/Chị ${dto.customer_name} ạ\n\n` +
       `📌 Mã đơn: ${orderCode}\n` +
       `👤 Khách hàng: ${dto.customer_name}\n` +
       `📞 Số điện thoại: ${dto.customer_phone}\n` +
