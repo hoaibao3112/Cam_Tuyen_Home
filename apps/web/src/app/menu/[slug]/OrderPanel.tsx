@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { CartItem } from './MenuClient'
 import { MenuItem } from './page'
 import tienGiangData from '@/lib/tien-giang.json'
+import Image from 'next/image'
 
 interface Props {
   cart: CartItem[]
@@ -155,11 +156,15 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                 {cart.map((item) => (
                   <div key={item.id} className="flex items-center gap-3 bg-blue-50/10 p-2 rounded-2xl border border-blue-100/10 hover:border-blue-100/40 transition-colors">
                     {item.image_url && (
-                      <img
-                        src={item.image_url}
-                        alt={item.name}
-                        className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-blue-100/20"
-                      />
+                      <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border border-blue-100/20">
+                        <Image
+                          src={item.image_url}
+                          alt={item.name}
+                          fill
+                          className="object-cover"
+                          sizes="56px"
+                        />
+                      </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-slate-800 text-sm font-bold truncate">{item.name}</p>
