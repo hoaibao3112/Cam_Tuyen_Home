@@ -12,6 +12,7 @@ module.exports = {
         'primary-dark': '#C44A18',
       },
       fontFamily: {
+        sans: ['var(--font-be-vietnam)', 'sans-serif'],
         playball: ['var(--font-playball)', 'cursive'],
         dancing: ['var(--font-dancing)', 'cursive'],
       },
