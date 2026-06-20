@@ -35,6 +35,7 @@ export default function AdminPage() {
   
   const [apiUrl, setApiUrl] = useState('')
   const [shopSlug, setShopSlug] = useState('')
+  const [adminApiKey, setAdminApiKey] = useState('')
   const [configLoaded, setConfigLoaded] = useState(false)
   const [items, setItems] = useState<MenuItem[]>([])
   const [form, setForm] = useState(emptyForm)
@@ -74,11 +75,13 @@ export default function AdminPage() {
         const data = await res.json()
         setApiUrl(data.apiUrl)
         setShopSlug(data.shopSlug)
+        setAdminApiKey(data.adminApiKey)
         setConfigLoaded(true)
       } catch (err) {
         console.error('Lỗi khi tải cấu hình:', err)
         setApiUrl('http://localhost:3001')
         setShopSlug('quan-test')
+        setAdminApiKey('ynuquan_secret_api_key_2026')
         setConfigLoaded(true)
       }
     }
@@ -116,7 +119,7 @@ export default function AdminPage() {
       image_url: form.image_url.trim(),
     }
 
-    const apiKey = process.env.NEXT_PUBLIC_ADMIN_API_KEY || 'ynuquan_secret_api_key_2026'
+    const apiKey = adminApiKey || 'ynuquan_secret_api_key_2026'
 
     try {
       let res
@@ -232,7 +235,7 @@ export default function AdminPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Bạn có chắc chắn muốn xóa món này?')) return
-    const apiKey = process.env.NEXT_PUBLIC_ADMIN_API_KEY || 'ynuquan_secret_api_key_2026'
+    const apiKey = adminApiKey || 'ynuquan_secret_api_key_2026'
     
     try {
       const res = await fetch(`${apiUrl}/menu/${id}`, { 
