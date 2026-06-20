@@ -4,8 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-client'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-const SHOP_SLUG = process.env.NEXT_PUBLIC_SHOP_SLUG || 'demo'
+// API and SHOP_SLUG are loaded dynamically from /api/config at runtime
 
 type MenuItem = {
   id: string
@@ -34,6 +33,9 @@ export default function AdminPage() {
   const router = useRouter()
   const supabase = createClient()
   
+  const [apiUrl, setApiUrl] = useState('')
+  const [shopSlug, setShopSlug] = useState('')
+  const [configLoaded, setConfigLoaded] = useState(false)
   const [items, setItems] = useState<MenuItem[]>([])
   const [form, setForm] = useState(emptyForm)
   const [editId, setEditId] = useState<string | null>(null)
@@ -54,9 +56,10 @@ export default function AdminPage() {
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState<'success' | 'error'>('success')
 
-  const fetchItems = async () => {
+  const fetchItems = async (currentApiUrl = apiUrl, currentShopSlug = shopSlug) => {
+    if (!currentApiUrl || !currentShopSlug) return
     try {
-      const res = await fetch(`${API}/menu/${SHOP_SLUG}`)
+      const res = await fetch(`${currentApiUrl}/menu/${currentShopSlug}?all=true`)
       const data = await res.json()
       setItems(data || [])
     } catch (err) {
@@ -65,8 +68,28 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    fetchItems()
+    const loadConfig = async () => {
+      try {
+        const res = await fetch('/api/config')
+        const data = await res.json()
+        setApiUrl(data.apiUrl)
+        setShopSlug(data.shopSlug)
+        setConfigLoaded(true)
+      } catch (err) {
+        console.error('Lỗi khi tải cấu hình:', err)
+        setApiUrl('http://localhost:3001')
+        setShopSlug('quan-test')
+        setConfigLoaded(true)
+      }
+    }
+    loadConfig()
   }, [])
+
+  useEffect(() => {
+    if (configLoaded && apiUrl && shopSlug) {
+      fetchItems(apiUrl, shopSlug)
+    }
+  }, [configLoaded, apiUrl, shopSlug])
 
   const showMsg = (text: string, type: 'success' | 'error' = 'success') => {
     setMsg(text)
@@ -89,7 +112,7 @@ export default function AdminPage() {
       price: Number(form.price),
       category: finalCategory,
       is_active: form.is_active,
-      shop_slug: SHOP_SLUG,
+      shop_slug: shopSlug,
       image_url: form.image_url.trim(),
     }
 
@@ -98,7 +121,7 @@ export default function AdminPage() {
     try {
       let res
       if (editId) {
-        res = await fetch(`${API}/menu/${editId}`, {
+        res = await fetch(`${apiUrl}/menu/${editId}`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
@@ -113,7 +136,7 @@ export default function AdminPage() {
           showMsg(errData.message || 'Lỗi khi cập nhật món!', 'error')
         }
       } else {
-        res = await fetch(`${API}/menu`, {
+        res = await fetch(`${apiUrl}/menu`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -133,7 +156,7 @@ export default function AdminPage() {
         setForm(emptyForm)
         setEditId(null)
         setIsModalOpen(false)
-        fetchItems()
+        fetchItems(apiUrl, shopSlug)
       }
     } catch (err) {
       showMsg('Có lỗi kết nối xảy ra!', 'error')
@@ -157,7 +180,7 @@ export default function AdminPage() {
     try {
       const fileExt = file.name.split('.').pop()
       const randomStr = Math.random().toString(36).substring(2, 9)
-      const fileName = `${SHOP_SLUG}/${Date.now()}-${randomStr}.${fileExt}`
+      const fileName = `${shopSlug}/${Date.now()}-${randomStr}.${fileExt}`
 
       const { data, error } = await supabase.storage
         .from('menu-images')
@@ -212,7 +235,7 @@ export default function AdminPage() {
     const apiKey = process.env.NEXT_PUBLIC_ADMIN_API_KEY || 'ynuquan_secret_api_key_2026'
     
     try {
-      const res = await fetch(`${API}/menu/${id}`, { 
+      const res = await fetch(`${apiUrl}/menu/${id}`, { 
         method: 'DELETE',
         headers: {
           'x-api-key': apiKey
@@ -220,7 +243,7 @@ export default function AdminPage() {
       })
       if (res.ok) {
         showMsg('Đã xóa món ăn thành công!')
-        fetchItems()
+        fetchItems(apiUrl, shopSlug)
       } else {
         const errData = await res.json()
         showMsg(errData.message || 'Không thể xóa món ăn!', 'error')

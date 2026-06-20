@@ -5,13 +5,17 @@ import { SupabaseService } from '../supabase/supabase.service'
 export class MenuService {
   constructor(private readonly supabase: SupabaseService) {}
 
-  async getMenuBySlug(slug: string) {
-    const { data, error } = await this.supabase.db
+  async getMenuBySlug(slug: string, includeInactive = false) {
+    let query = this.supabase.db
       .from('menu_items')
       .select('*')
       .eq('shop_slug', slug)
-      .eq('is_active', true)
-      .order('category')
+
+    if (!includeInactive) {
+      query = query.eq('is_active', true)
+    }
+
+    const { data, error } = await query.order('category')
 
     if (error) throw new NotFoundException('Không tìm thấy menu')
     return data
