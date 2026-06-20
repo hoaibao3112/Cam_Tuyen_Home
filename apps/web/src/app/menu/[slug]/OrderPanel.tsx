@@ -90,7 +90,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
   if (step === 'cart') {
     return (
       <div className="flex flex-col h-full bg-white text-slate-800">
-        <div className="px-5 py-4.5 border-b border-amber-50">
+        <div className="px-5 py-4.5 border-b border-sky-50">
           <h2 className="text-slate-850 font-extrabold text-lg flex items-center gap-2">
             <span>🛒 Đơn hàng của bạn</span>
           </h2>
@@ -108,33 +108,33 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
             </div>
           ) : (
             cart.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 bg-amber-50/10 p-2 rounded-2xl border border-amber-100/10 hover:border-amber-100/40 transition-colors">
+              <div key={item.id} className="flex items-center gap-3 bg-sky-50/10 p-2 rounded-2xl border border-sky-100/10 hover:border-sky-100/40 transition-colors">
                 {item.image_url && (
                   <img
                     src={item.image_url}
                     alt={item.name}
-                    className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-amber-100/20"
+                    className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-sky-100/20"
                   />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-slate-800 text-sm font-bold truncate">{item.name}</p>
-                  <p className="text-amber-600 text-sm font-black mt-0.5">
+                  <p className="text-rose-600 text-sm font-black mt-0.5">
                     {(item.price * item.quantity).toLocaleString('vi-VN')}đ
                   </p>
                 </div>
-                <div className="flex items-center gap-0.5 bg-amber-50 border border-amber-200/50 rounded-xl overflow-hidden flex-shrink-0">
+                <div className="flex items-center gap-0.5 bg-sky-50 border border-sky-200/50 rounded-xl overflow-hidden flex-shrink-0">
                   <button
                     onClick={() => onRemove(item.id)}
-                    className="w-8 h-8 text-amber-900 font-bold hover:bg-amber-150/40 transition-colors cursor-pointer"
+                    className="w-8 h-8 text-sky-950 font-bold hover:bg-sky-100/50 transition-colors cursor-pointer"
                   >
                     −
                   </button>
-                  <span className="text-amber-950 text-xs font-black w-5 text-center">
+                  <span className="text-sky-950 text-xs font-black w-5 text-center">
                     {item.quantity}
                   </span>
                   <button
                     onClick={() => onAdd(item)}
-                    className="w-8 h-8 text-amber-900 font-bold hover:bg-amber-150/40 transition-colors cursor-pointer"
+                    className="w-8 h-8 text-sky-950 font-bold hover:bg-sky-100/50 transition-colors cursor-pointer"
                   >
                     +
                   </button>
@@ -146,16 +146,16 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
 
         {/* Tổng tiền + nút đặt */}
         {cart.length > 0 && (
-          <div className="px-5 py-4.5 border-t border-amber-50 bg-amber-50/10 space-y-3.5">
+          <div className="px-5 py-4.5 border-t border-sky-50 bg-sky-50/10 space-y-3.5">
             <div className="flex justify-between items-center">
               <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">{totalQty} món</span>
-              <span className="text-amber-600 font-black text-xl">
+              <span className="text-rose-600 font-black text-xl">
                 {total.toLocaleString('vi-VN')}đ
               </span>
             </div>
             <button
               onClick={() => setStep('form')}
-              className="w-full bg-gradient-to-r from-amber-450 to-amber-400 hover:from-amber-500 hover:to-amber-450 text-white py-3.5 rounded-2xl font-bold text-base transition-all duration-300 shadow-md shadow-amber-400/10 cursor-pointer"
+              className="w-full bg-gradient-to-r from-sky-500 to-blue-500 hover:from-sky-600 hover:to-blue-600 text-white py-3.5 rounded-2xl font-bold text-base transition-all duration-300 shadow-md shadow-sky-500/10 cursor-pointer"
             >
               Đặt hàng ngay →
             </button>
@@ -169,7 +169,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
   if (step === 'form') {
     return (
       <div className="flex flex-col h-full bg-white text-slate-800">
-        <div className="px-5 py-4 border-b border-amber-50 flex items-center gap-3">
+        <div className="px-5 py-4 border-b border-sky-50 flex items-center gap-3">
           <button
             onClick={() => setStep('cart')}
             className="size-8 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-650 hover:text-slate-800 text-xl font-bold transition-colors flex items-center justify-center cursor-pointer"
@@ -181,20 +181,20 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {/* Tóm tắt đơn */}
-          <div className="bg-amber-50/20 border border-amber-100/50 rounded-3xl p-4.5 space-y-2">
+          <div className="bg-sky-50/10 border border-sky-100/50 rounded-3xl p-4.5 space-y-2">
             {cart.map((item) => (
               <div key={item.id} className="flex justify-between text-xs font-semibold">
                 <span className="text-slate-600">
                   {item.name} × {item.quantity}
                 </span>
-                <span className="text-slate-800">
+                <span className="text-rose-600 font-extrabold">
                   {(item.price * item.quantity).toLocaleString('vi-VN')}đ
                 </span>
               </div>
             ))}
-            <div className="border-t border-amber-100/40 pt-2.5 flex justify-between items-center">
+            <div className="border-t border-sky-100/40 pt-2.5 flex justify-between items-center">
               <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Tổng cộng</span>
-              <span className="text-amber-600 font-black text-lg">
+              <span className="text-rose-600 font-black text-lg">
                 {total.toLocaleString('vi-VN')}đ
               </span>
             </div>
@@ -210,7 +210,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Nguyễn Văn A"
-              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-sky-400 focus:bg-white transition-all duration-200"
             />
           </div>
 
@@ -224,7 +224,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="0901 234 567"
-              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-sky-400 focus:bg-white transition-all duration-200"
             />
           </div>
 
@@ -236,7 +236,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
             <select
               value={district}
               onChange={(e) => handleDistrictChange(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 cursor-pointer"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-sky-400 focus:bg-white transition-all duration-200 cursor-pointer"
             >
               <option value="">-- Chọn Quận/Huyện --</option>
               {tienGiangData.map((d) => (
@@ -256,7 +256,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
               value={ward}
               onChange={(e) => setWard(e.target.value)}
               disabled={!district}
-              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-sky-400 focus:bg-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <option value="">-- Chọn Phường/Xã --</option>
               {wardsList.map((w) => (
@@ -277,7 +277,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
               value={street}
               onChange={(e) => setStreet(e.target.value)}
               placeholder="Ví dụ: 123 Lê Lợi"
-              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-sky-400 focus:bg-white transition-all duration-200"
             />
           </div>
 
@@ -291,7 +291,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
               onChange={(e) => setNote(e.target.value)}
               placeholder="Ít cay, không hành, dị ứng..."
               rows={3}
-              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 resize-none"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-sky-400 focus:bg-white transition-all duration-200 resize-none"
             />
           </div>
 
@@ -302,11 +302,11 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
           )}
         </div>
 
-        <div className="px-5 py-4 border-t border-amber-50 bg-amber-50/10">
+        <div className="px-5 py-4 border-t border-sky-50 bg-sky-50/10">
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full bg-gradient-to-r from-amber-450 to-amber-400 hover:from-amber-500 hover:to-amber-450 disabled:opacity-50 text-white py-3.5 rounded-2xl font-bold text-base transition-all duration-300 shadow-md shadow-amber-400/10 cursor-pointer"
+            className="w-full bg-gradient-to-r from-sky-500 to-blue-500 hover:from-sky-600 hover:to-blue-600 disabled:opacity-50 text-white py-3.5 rounded-2xl font-bold text-base transition-all duration-300 shadow-md shadow-sky-500/10 cursor-pointer"
           >
             {loading ? 'Đang gửi đơn...' : `Xác nhận đặt hàng · ${total.toLocaleString('vi-VN')}đ`}
           </button>
@@ -322,7 +322,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
       <div>
         <h2 className="text-slate-800 font-black text-xl">Đặt hàng thành công!</h2>
         <p className="text-slate-450 text-sm mt-1.5">
-          Mã đơn: <span className="text-amber-600 font-extrabold">{orderCode}</span>
+          Mã đơn: <span className="text-sky-600 font-extrabold">{orderCode}</span>
         </p>
       </div>
       <p className="text-slate-500 text-xs leading-relaxed max-w-xs">
@@ -338,7 +338,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear }: Pro
       </a>
       <button
         onClick={() => setStep('cart')}
-        className="text-amber-600 text-xs font-bold underline hover:text-amber-700 transition-colors cursor-pointer"
+        className="text-sky-600 text-xs font-bold underline hover:text-sky-700 transition-colors cursor-pointer"
       >
         Đặt thêm món khác
       </button>
