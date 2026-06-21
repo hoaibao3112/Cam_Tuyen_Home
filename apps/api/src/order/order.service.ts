@@ -301,6 +301,7 @@ export class OrderService {
 
   async handleBotcakeWebhook(body: { ref?: string }) {
     const ref = body.ref
+    console.log('[Botcake Webhook] Nhận ref gửi từ Botcake:', ref)
     if (!ref) {
       throw new BadRequestException('Thiếu ref parameter')
     }
