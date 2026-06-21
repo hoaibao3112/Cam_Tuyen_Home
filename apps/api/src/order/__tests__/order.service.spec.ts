@@ -205,7 +205,7 @@ describe('OrderService', () => {
         expect.objectContaining({
           recipient: { id: 'user-psid-1' },
           message: expect.objectContaining({
-            text: expect.stringContaining('Com tam x2'),
+            text: expect.stringContaining('Com tam (x2)'),
           }),
         }),
         expect.any(Object),
@@ -240,7 +240,7 @@ describe('OrderService', () => {
         expect.objectContaining({
           recipient: { id: 'user-psid-2' },
           message: expect.objectContaining({
-            text: expect.stringContaining('Mã đơn: DH123456'),
+            text: expect.stringContaining('Mã đơn hàng: DH123456'),
           }),
         }),
         expect.any(Object),
@@ -300,6 +300,61 @@ describe('OrderService', () => {
         expect.any(Object),
         expect.any(Object),
       )
+    })
+  })
+
+  describe('handleBotcakeWebhook', () => {
+    const mockOrder = {
+      order_code: 'DH123456',
+      customer_name: 'Nguyen Van A',
+      customer_phone: '0901234567',
+      total_price: 90000,
+      note: '[Địa chỉ: 123 Le Loi, Phuong 1, My Tho, Tiền Giang] - Ghi chú: It cay',
+      items: [
+        {
+          name: 'Com tam',
+          price: 45000,
+          quantity: 2,
+        },
+      ],
+    }
+
+    it('[HAPPY PATH] handleBotcakeWebhook trả về thông tin đơn hàng đầy đủ từ ref', async () => {
+      mockSupabaseClient.single.mockResolvedValue({ data: mockOrder, error: null })
+
+      const result = await service.handleBotcakeWebhook({ ref: 'order_DH123456' })
+
+      expect(mockSupabaseClient.from).toHaveBeenCalledWith('orders')
+      expect(mockSupabaseClient.eq).toHaveBeenCalledWith('order_code', 'DH123456')
+      expect(result).toEqual({
+        success: true,
+        customer_name: 'Nguyen Van A',
+        customer_phone: '0901234567',
+        order_code: 'DH123456',
+        total_price: '90.000đ',
+        address: '123 Le Loi, Phuong 1, My Tho, Tiền Giang',
+        note: 'It cay',
+        items_list: '• Com tam (x2) — 90.000đ',
+      })
+    })
+
+    it('[HAPPY PATH] handleBotcakeWebhook xử lý khi ref không có tiền tố order_', async () => {
+      mockSupabaseClient.single.mockResolvedValue({ data: mockOrder, error: null })
+
+      const result = await service.handleBotcakeWebhook({ ref: 'DH123456' })
+
+      expect(mockSupabaseClient.eq).toHaveBeenCalledWith('order_code', 'DH123456')
+      expect(result.order_code).toBe('DH123456')
+    })
+
+    it('[ERROR HANDLING] handleBotcakeWebhook ném lỗi khi thiếu ref', async () => {
+      await expect(service.handleBotcakeWebhook({})).rejects.toThrow(BadRequestException)
+    })
+
+    it('[ERROR HANDLING] handleBotcakeWebhook ném lỗi khi không tìm thấy đơn hàng', async () => {
+      mockSupabaseClient.single.mockResolvedValue({ data: null, error: { message: 'Not found' } })
+
+      await expect(service.handleBotcakeWebhook({ ref: 'DH_INVALID' })).rejects.toThrow(BadRequestException)
     })
   })
 })

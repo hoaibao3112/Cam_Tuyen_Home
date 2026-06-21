@@ -26,4 +26,10 @@ export class OrderController {
     await this.orderService.handleWebhookPayload(body)
     return 'EVENT_RECEIVED'
   }
+
+  @Post('botcake-webhook')
+  @HttpCode(200)
+  async handleBotcakeWebhook(@Body() body: { ref: string }) {
+    return this.orderService.handleBotcakeWebhook(body)
+  }
 }

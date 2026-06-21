@@ -288,4 +288,62 @@ export class OrderService {
       },
     )
   }
+
+  async handleBotcakeWebhook(body: { ref?: string }) {
+    const ref = body.ref
+    if (!ref) {
+      throw new BadRequestException('Thiếu ref parameter')
+    }
+
+    const orderCode = ref.startsWith('order_') ? ref.replace('order_', '') : ref
+
+    // 1. Truy vấn đơn hàng từ Supabase
+    const { data: order, error } = await this.supabase.db
+      .from('orders')
+      .select('*')
+      .eq('order_code', orderCode)
+      .single()
+
+    if (error || !order) {
+      throw new BadRequestException(`Không tìm thấy đơn hàng với mã ${orderCode}`)
+    }
+
+    // 2. Trích xuất địa chỉ và ghi chú từ cột `note`
+    let address = 'Không xác định'
+    let note = ''
+    if (order.note) {
+      const addressMatch = order.note.match(/\[Địa chỉ: (.*?)\]/)
+      if (addressMatch) {
+        address = addressMatch[1]
+      } else {
+        address = order.note
+      }
+      
+      const noteMatch = order.note.match(/ - Ghi chú: (.*)$/)
+      if (noteMatch) {
+        note = noteMatch[1]
+      }
+    }
+
+    // 3. Tạo danh sách các món ăn
+    const items = (order.items || []) as any[]
+    const itemsList = items
+      .map(
+        (i) =>
+          `• ${i.name} (x${i.quantity}) — ${(i.price * i.quantity).toLocaleString('vi-VN')}đ`,
+      )
+      .join('\n')
+
+    // 4. Trả về JSON để Botcake lưu vào Custom Fields
+    return {
+      success: true,
+      customer_name: order.customer_name,
+      customer_phone: order.customer_phone,
+      order_code: order.order_code,
+      total_price: `${order.total_price.toLocaleString('vi-VN')}đ`,
+      address,
+      note,
+      items_list: itemsList,
+    }
+  }
 }
