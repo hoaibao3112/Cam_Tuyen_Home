@@ -303,7 +303,17 @@ export class OrderService {
     const ref = body.ref
     console.log('[Botcake Webhook] Nhận ref gửi từ Botcake:', ref)
     if (!ref) {
-      throw new BadRequestException('Thiếu ref parameter')
+      return {
+        version: 'v2',
+        content: {
+          messages: [
+            {
+              type: 'text',
+              text: '⚠️ Không nhận được tham số ref đơn hàng từ Botcake.',
+            },
+          ],
+        },
+      }
     }
 
     let orderCode = ref
@@ -323,7 +333,17 @@ export class OrderService {
       .single()
 
     if (error || !order) {
-      throw new BadRequestException(`Không tìm thấy đơn hàng với mã ${orderCode}`)
+      return {
+        version: 'v2',
+        content: {
+          messages: [
+            {
+              type: 'text',
+              text: `⚠️ Không tìm thấy thông tin đơn hàng với mã ${orderCode} trong hệ thống.`,
+            },
+          ],
+        },
+      }
     }
 
     // 2. Trích xuất địa chỉ và ghi chú từ cột `note`
@@ -352,16 +372,29 @@ export class OrderService {
       )
       .join('\n')
 
-    // 4. Trả về JSON để Botcake lưu vào Custom Fields
+    // 4. Định dạng tin nhắn xác nhận đơn hàng
+    const message =
+      `Ý Nù Quán xác nhận đơn hàng của Anh/Chị ${order.customer_name} ạ\n\n` +
+      `📌 THÔNG TIN ĐƠN HÀNG:\n` +
+      `• Mã đơn hàng: ${order.order_code}\n` +
+      `• Số điện thoại: ${order.customer_phone}\n` +
+      `• Địa chỉ giao hàng: ${address}\n\n` +
+      `📋 CHI TIẾT MÓN ĂN:\n` +
+      `${itemsList}\n\n` +
+      `💰 TỔNG TIỀN: ${order.total_price.toLocaleString('vi-VN')}đ\n` +
+      (note ? `📝 Ghi chú: ${note}` : '')
+
+    // 5. Trả về cấu trúc Dynamic Content chuẩn của Messenger/Botcake
     return {
-      success: true,
-      customer_name: order.customer_name,
-      customer_phone: order.customer_phone,
-      order_code: order.order_code,
-      total_price: `${order.total_price.toLocaleString('vi-VN')}đ`,
-      address,
-      note,
-      items_list: itemsList,
+      version: 'v2',
+      content: {
+        messages: [
+          {
+            type: 'text',
+            text: message,
+          },
+        ],
+      },
     }
   }
 }
