@@ -40,7 +40,7 @@ export class OrderController {
     @Query() query: any,
   ) {
     this.orderService.logBotcakeWebhook(body, headers, query)
-    return this.orderService.handleBotcakeWebhook(body)
+    return this.orderService.handleBotcakeWebhook({ ...query, ...body })
   }
 }
 
