@@ -56,7 +56,7 @@ export class OrderService {
     )
 
     // 5. Trả về link mở Messenger cho khách
-    const messengerUrl = `https://m.me/${process.env.FB_PAGE_ID}?ref=order_${orderCode}`
+    const messengerUrl = `https://m.me/${process.env.FB_PAGE_ID}?ref=order--${orderCode}`
 
     return {
       success: true,
@@ -200,9 +200,19 @@ export class OrderService {
           ref = event.postback.referral.ref
         }
 
-        if (ref && ref.startsWith('order_')) {
-          const orderCode = ref.replace('order_', '')
-          await this.handleFacebookReferralOrder(senderPsid, orderCode)
+        if (ref) {
+          let orderCode = ''
+          if (ref.startsWith('order--')) {
+            orderCode = ref.replace('order--', '')
+          } else if (ref.startsWith('order_')) {
+            orderCode = ref.replace('order_', '')
+          } else if (ref.startsWith('order-')) {
+            orderCode = ref.replace('order-', '')
+          }
+
+          if (orderCode) {
+            await this.handleFacebookReferralOrder(senderPsid, orderCode)
+          }
         }
       }
     }
@@ -295,7 +305,14 @@ export class OrderService {
       throw new BadRequestException('Thiếu ref parameter')
     }
 
-    const orderCode = ref.startsWith('order_') ? ref.replace('order_', '') : ref
+    let orderCode = ref
+    if (ref.startsWith('order--')) {
+      orderCode = ref.replace('order--', '')
+    } else if (ref.startsWith('order_')) {
+      orderCode = ref.replace('order_', '')
+    } else if (ref.startsWith('order-')) {
+      orderCode = ref.replace('order-', '')
+    }
 
     // 1. Truy vấn đơn hàng từ Supabase
     const { data: order, error } = await this.supabase.db
