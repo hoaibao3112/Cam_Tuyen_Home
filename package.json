@@ -12,6 +12,7 @@
     "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\""
   },
   "devDependencies": {
-    "concurrently": "^10.0.3"
+    "concurrently": "^10.0.3",
+    "sharp": "^0.35.2"
   }
 }
