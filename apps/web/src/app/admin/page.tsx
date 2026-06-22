@@ -66,6 +66,44 @@ export default function AdminPage() {
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState<'success' | 'error'>('success')
 
+  // Dynamic categories: presets + any unique categories from existing items
+  const dynamicCategories = useMemo(() => {
+    const cats = new Set(PRESET_CATEGORIES)
+    items.forEach(item => {
+      if (item.category && item.category !== 'custom') {
+        cats.add(item.category)
+      }
+    })
+    return Array.from(cats)
+  }, [items])
+
+  // Dynamic subcategories mapping: presets + any unique subcategories from existing items for each category
+  const dynamicSubCategoriesMap = useMemo(() => {
+    const map: Record<string, Set<string>> = {}
+    
+    // Initialize with presets
+    Object.entries(SUB_CATEGORIES_MAP).forEach(([cat, subs]) => {
+      map[cat] = new Set(subs)
+    })
+
+    // Add actual ones from items
+    items.forEach(item => {
+      if (item.category && item.sub_category) {
+        if (!map[item.category]) {
+          map[item.category] = new Set()
+        }
+        map[item.category].add(item.sub_category)
+      }
+    })
+
+    // Convert Sets to Arrays
+    const result: Record<string, string[]> = {}
+    Object.entries(map).forEach(([cat, set]) => {
+      result[cat] = Array.from(set)
+    })
+    return result
+  }, [items])
+
   const fetchItems = async (currentApiUrl = apiUrl, currentShopSlug = shopSlug) => {
     if (!currentApiUrl || !currentShopSlug) return
     try {
@@ -254,8 +292,8 @@ export default function AdminPage() {
   }
 
   const handleEdit = (item: MenuItem) => {
-    const isPreset = PRESET_CATEGORIES.includes(item.category)
-    const subPresets = isPreset ? (SUB_CATEGORIES_MAP[item.category] || []) : []
+    const isPreset = dynamicCategories.includes(item.category)
+    const subPresets = isPreset ? (dynamicSubCategoriesMap[item.category] || []) : []
     const isSubPreset = item.sub_category ? subPresets.includes(item.sub_category) : true
 
     setEditId(item.id)
@@ -900,7 +938,7 @@ export default function AdminPage() {
                   })}
                   className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200 cursor-pointer"
                 >
-                  {PRESET_CATEGORIES.map(cat => (
+                  {dynamicCategories.map(cat => (
                     <option key={cat} value={cat}>
                       {cat}
                     </option>
@@ -925,14 +963,14 @@ export default function AdminPage() {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
                   Nhóm phụ (Loại món)
                 </label>
-                {PRESET_CATEGORIES.includes(form.category) ? (
+                {dynamicCategories.includes(form.category) ? (
                   <select
                     value={form.sub_category}
                     onChange={e => setForm({ ...form, sub_category: e.target.value, customSubCategory: '' })}
                     className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200 cursor-pointer"
                   >
                     <option value="">Không có</option>
-                    {(SUB_CATEGORIES_MAP[form.category] || []).map(sub => (
+                    {(dynamicSubCategoriesMap[form.category] || []).map(sub => (
                       <option key={sub} value={sub}>
                         {sub}
                       </option>
@@ -951,7 +989,7 @@ export default function AdminPage() {
                 )}
 
                 {/* Custom Sub-Category Input */}
-                {PRESET_CATEGORIES.includes(form.category) && form.sub_category === 'custom' && (
+                {dynamicCategories.includes(form.category) && form.sub_category === 'custom' && (
                   <input
                     type="text"
                     placeholder="Nhập tên nhóm phụ mới (ví dụ: mì, súp...)"
