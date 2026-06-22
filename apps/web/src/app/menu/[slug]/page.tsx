@@ -8,6 +8,7 @@ export interface MenuItem {
   description?: string
   image_url?: string
   category: string
+  sub_category?: string | null
 }
 
 async function getMenuItems(slug: string): Promise<MenuItem[]> {

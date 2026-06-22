@@ -7,6 +7,7 @@ create table menu_items (
   price integer not null,
   image_url text,
   category text default 'Món chính',
+  sub_category text,
   is_active boolean default true,
   created_at timestamp with time zone default now()
 );

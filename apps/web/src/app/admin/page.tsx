@@ -11,6 +11,7 @@ type MenuItem = {
   name: string
   price: number
   category: string
+  sub_category?: string | null
   description: string
   is_active: boolean
   shop_slug: string
@@ -19,11 +20,19 @@ type MenuItem = {
 
 const PRESET_CATEGORIES = ['Món ăn healthy', 'Món ăn vặt', 'Nước uống']
 
+const SUB_CATEGORIES_MAP: Record<string, string[]> = {
+  'Món ăn healthy': ['Cơm', 'Bún', 'Phở', 'Salad'],
+  'Món ăn vặt': ['Mì', 'Súp', 'Tobokki', 'Bánh tráng', 'Viên chiên', 'Ăn kèm'],
+  'Nước uống': ['Trà sữa', 'Trà trái cây', 'Cà phê', 'Nước ngọt', 'Đá xay'],
+}
+
 const emptyForm = {
   name: '',
   price: '',
   category: 'Món ăn healthy',
   customCategory: '',
+  sub_category: '',
+  customSubCategory: '',
   description: '',
   is_active: true,
   image_url: '',
@@ -102,6 +111,7 @@ export default function AdminPage() {
 
   const handleSubmit = async () => {
     const finalCategory = form.category === 'custom' ? form.customCategory.trim() : form.category
+    const finalSubCategory = form.sub_category === 'custom' ? form.customSubCategory.trim() : form.sub_category
     
     if (!form.name.trim() || !form.price || !finalCategory) {
       showMsg('Vui lòng điền đủ tên, giá và danh mục sản phẩm!', 'error')
@@ -114,6 +124,7 @@ export default function AdminPage() {
       description: form.description.trim(),
       price: Number(form.price),
       category: finalCategory,
+      sub_category: finalSubCategory || null,
       is_active: form.is_active,
       shop_slug: shopSlug,
       image_url: form.image_url.trim(),
@@ -244,12 +255,19 @@ export default function AdminPage() {
 
   const handleEdit = (item: MenuItem) => {
     const isPreset = PRESET_CATEGORIES.includes(item.category)
+    const subPresets = isPreset ? (SUB_CATEGORIES_MAP[item.category] || []) : []
+    const isSubPreset = item.sub_category ? subPresets.includes(item.sub_category) : true
+
     setEditId(item.id)
     setForm({
       name: item.name,
       price: String(item.price),
       category: isPreset ? item.category : 'custom',
       customCategory: isPreset ? '' : item.category,
+      sub_category: item.sub_category 
+        ? (isSubPreset ? item.sub_category : 'custom')
+        : '',
+      customSubCategory: item.sub_category && !isSubPreset ? item.sub_category : '',
       description: item.description || '',
       is_active: item.is_active,
       image_url: item.image_url || '',
@@ -620,15 +638,22 @@ export default function AdminPage() {
                             </div>
                           </td>
                           <td className="py-3.5 px-6">
-                            <span className={`text-[11px] font-bold px-3 py-1 rounded-full border ${
-                              item.category === 'Món ăn healthy'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-150'
-                                : item.category === 'Nước uống'
-                                ? 'bg-blue-50 text-blue-700 border-blue-150'
-                                : 'bg-amber-50 text-amber-700 border-amber-150'
-                            }`}>
-                              {item.category}
-                            </span>
+                            <div className="flex flex-col gap-1 items-start">
+                              <span className={`text-[11px] font-bold px-3 py-1 rounded-full border ${
+                                item.category === 'Món ăn healthy'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-150'
+                                  : item.category === 'Nước uống'
+                                  ? 'bg-blue-50 text-blue-700 border-blue-150'
+                                  : 'bg-amber-50 text-amber-700 border-amber-150'
+                              }`}>
+                                {item.category}
+                              </span>
+                              {item.sub_category && (
+                                <span className="text-[10px] text-slate-500 font-semibold px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200">
+                                  {item.sub_category}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3.5 px-6 text-right font-extrabold text-slate-800 text-sm">
                             {item.price.toLocaleString('vi-VN')}
@@ -689,15 +714,22 @@ export default function AdminPage() {
 
                       {/* Thông tin */}
                       <div className="min-w-0">
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                          item.category === 'Món ăn healthy'
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : item.category === 'Nước uống'
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'bg-amber-50 text-amber-700'
-                        }`}>
-                          {item.category}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                            item.category === 'Món ăn healthy'
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : item.category === 'Nước uống'
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'bg-amber-50 text-amber-700'
+                          }`}>
+                            {item.category}
+                          </span>
+                          {item.sub_category && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wider">
+                              {item.sub_category}
+                            </span>
+                          )}
+                        </div>
                         <h4 className="font-bold text-slate-800 text-sm leading-snug mt-1 truncate">{item.name}</h4>
                         <p className="text-blue-600 font-extrabold text-xs mt-0.5">
                           {item.price.toLocaleString('vi-VN')}đ
@@ -860,7 +892,12 @@ export default function AdminPage() {
                 </label>
                 <select
                   value={form.category}
-                  onChange={e => setForm({ ...form, category: e.target.value })}
+                  onChange={e => setForm({ 
+                    ...form, 
+                    category: e.target.value, 
+                    sub_category: '', 
+                    customSubCategory: '' 
+                  })}
                   className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200 cursor-pointer"
                 >
                   {PRESET_CATEGORIES.map(cat => (
@@ -878,6 +915,48 @@ export default function AdminPage() {
                     placeholder="Nhập tên nhóm sản phẩm mới"
                     value={form.customCategory}
                     onChange={e => setForm({ ...form, customCategory: e.target.value })}
+                    className="w-full mt-3 bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200"
+                  />
+                )}
+              </div>
+
+              {/* Sub-Category Dropdown Selector */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+                  Nhóm phụ (Loại món)
+                </label>
+                {PRESET_CATEGORIES.includes(form.category) ? (
+                  <select
+                    value={form.sub_category}
+                    onChange={e => setForm({ ...form, sub_category: e.target.value, customSubCategory: '' })}
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200 cursor-pointer"
+                  >
+                    <option value="">Không có</option>
+                    {(SUB_CATEGORIES_MAP[form.category] || []).map(sub => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
+                    ))}
+                    <option value="custom">➕ Thêm nhóm phụ khác...</option>
+                  </select>
+                ) : (
+                  // Nếu danh mục chính là custom, cho phép nhập text tự do
+                  <input
+                    type="text"
+                    placeholder="Nhập nhóm phụ (nếu có)..."
+                    value={form.sub_category === 'custom' ? form.customSubCategory : form.sub_category}
+                    onChange={e => setForm({ ...form, sub_category: e.target.value, customSubCategory: e.target.value })}
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200"
+                  />
+                )}
+
+                {/* Custom Sub-Category Input */}
+                {PRESET_CATEGORIES.includes(form.category) && form.sub_category === 'custom' && (
+                  <input
+                    type="text"
+                    placeholder="Nhập tên nhóm phụ mới (ví dụ: mì, súp...)"
+                    value={form.customSubCategory}
+                    onChange={e => setForm({ ...form, customSubCategory: e.target.value })}
                     className="w-full mt-3 bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200"
                   />
                 )}
