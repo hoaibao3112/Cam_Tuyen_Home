@@ -1,6 +1,7 @@
-import { Controller, Post, Body, Get, Query, HttpCode, Headers } from '@nestjs/common'
+import { Controller, Post, Body, Get, Query, HttpCode, Headers, UseGuards } from '@nestjs/common'
 import { OrderService } from './order.service'
 import { CreateOrderDto } from './dto/create-order.dto'
+import { ApiKeyGuard } from '../common/guards/api-key.guard'
 
 @Controller('orders')
 export class OrderController {
@@ -27,7 +28,9 @@ export class OrderController {
     return 'EVENT_RECEIVED'
   }
 
+  // Debug endpoint — chỉ admin mới được xem, không expose ra ngoài production
   @Get('botcake-debug')
+  @UseGuards(ApiKeyGuard)
   getBotcakeDebug() {
     return this.orderService.getBotcakeLogs()
   }
@@ -43,4 +46,3 @@ export class OrderController {
     return this.orderService.handleBotcakeWebhook({ ...query, ...body })
   }
 }
-

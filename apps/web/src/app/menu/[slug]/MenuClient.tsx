@@ -236,11 +236,13 @@ export default function MenuClient({
                     {/* Ảnh món (Bo góc, 4/3 aspect ratio) */}
                     <div className="relative aspect-[4/3] w-full rounded-md sm:rounded-[12px] overflow-hidden bg-[#FAFAFA] shadow-xs">
                       {item.image_url ? (
-                        <img
+                        <Image
                           src={item.image_url}
                           alt={item.name}
-                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                          loading="lazy"
+                          fill
+                          sizes="(max-width: 640px) 25vw, (max-width: 1024px) 33vw, 20vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          priority={index < 8}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-xl select-none bg-[#FAFAFA]">
@@ -407,12 +409,14 @@ export default function MenuClient({
             {/* Cuộn nội dung */}
             <div className="flex-1 overflow-y-auto pb-6">
               {/* Hình ảnh */}
-              <div className="w-full bg-slate-50 flex justify-center items-center overflow-hidden">
+              <div className="relative w-full aspect-[4/3] max-h-[360px] bg-slate-50 flex justify-center items-center overflow-hidden shrink-0">
                 {selectedItem.image_url ? (
-                  <img
+                  <Image
                     src={selectedItem.image_url}
                     alt={selectedItem.name}
-                    className="w-full h-auto max-h-[360px] object-contain"
+                    fill
+                    sizes="(max-width: 640px) 100vw, 480px"
+                    className="object-contain"
                   />
                 ) : (
                   <div className="aspect-video w-full flex items-center justify-center text-5xl bg-slate-100 select-none">

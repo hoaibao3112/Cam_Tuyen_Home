@@ -12,17 +12,20 @@ export async function bootstrapNest() {
 
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server))
 
-  // Validate tất cả request body tự động theo DTO
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,       // Loại bỏ các field không khai báo trong DTO
-      forbidNonWhitelisted: true, // Báo lỗi nếu client gửi field lạ
-      transform: true,       // Tự động convert type (string → number, v.v.)
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   )
 
+  // Chỉ cho phép domain frontend thật — không dùng '*' trên production
+  const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000'
   app.enableCors({
-    origin: '*', // Hỗ trợ CORS cho Vercel
+    origin: allowedOrigin,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'x-api-key'],
   })
 
   await app.init()
@@ -42,7 +45,9 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
       }),
     )
     app.enableCors({
-      origin: process.env.FRONTEND_URL || '*',
+      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'x-api-key'],
     })
     await app.listen(port)
     console.log(`API đang chạy tại cổng ${port}`)
@@ -54,4 +59,3 @@ export default async (req: any, res: any) => {
   await bootstrapNest()
   server(req, res)
 }
-

@@ -15,7 +15,7 @@ async function getMenuItems(slug: string): Promise<MenuItem[]> {
   try {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/menu/${slug}`,
-      { cache: 'no-store' }
+      { next: { revalidate: 60 } }
     )
     if (!res.ok) return []
     return res.json()

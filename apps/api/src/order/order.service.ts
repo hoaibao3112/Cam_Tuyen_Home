@@ -3,6 +3,56 @@ import { SupabaseService } from '../supabase/supabase.service'
 import { CreateOrderDto } from './dto/create-order.dto'
 import axios from 'axios'
 
+// ─── Helper functions dùng chung ─────────────────────────────────────────────
+
+/**
+ * Ghép địa chỉ đầy đủ từ các trường của DTO.
+ * Tập trung logic tại đây để tránh copy-paste ở nhiều nơi.
+ */
+function buildFullAddress(dto: {
+  address_district: string
+  address_ward: string
+  address_street?: string
+}): string {
+  const isPickup =
+    dto.address_district === 'Tới quán lấy' || dto.address_ward === 'Tới quán lấy'
+  if (isPickup) return 'Khách tự tới quán lấy (Không giao hàng)'
+  return `${dto.address_street ? dto.address_street + ', ' : ''}${dto.address_ward}, ${dto.address_district}, Tiền Giang`
+}
+
+/**
+ * Parse mã đơn hàng từ chuỗi ref (Facebook Messenger / Botcake).
+ * Tách bỏ các prefix như '2567308--', 'order=', 'order-', ...
+ */
+function parseOrderRefCode(ref: string): string {
+  let code = ref
+  // Bỏ prefix số
+  if (code.startsWith('w2567308--')) code = code.replace('w2567308--', '')
+  else if (code.startsWith('2567308--')) code = code.replace('2567308--', '')
+  // Bỏ prefix 'order'
+  if (code.startsWith('order=')) code = code.replace('order=', '')
+  else if (code.startsWith('order--')) code = code.replace('order--', '')
+  else if (code.startsWith('order_')) code = code.replace('order_', '')
+  else if (code.startsWith('order-')) code = code.replace('order-', '')
+  return code
+}
+
+/**
+ * Trích xuất địa chỉ và ghi chú từ cột `note` trong bảng orders.
+ * Format lưu: "[Địa chỉ: ...] - Ghi chú: ..."
+ */
+function parseOrderNote(note: string | null): { address: string; note: string } {
+  if (!note) return { address: 'Không xác định', note: '' }
+  const addressMatch = note.match(/\[Địa chỉ: (.*?)\]/)
+  const noteMatch = note.match(/ - Ghi chú: (.*)$/)
+  return {
+    address: addressMatch ? addressMatch[1] : note,
+    note: noteMatch ? noteMatch[1] : '',
+  }
+}
+
+// ─── Service ──────────────────────────────────────────────────────────────────
+
 @Injectable()
 export class OrderService {
   constructor(private readonly supabase: SupabaseService) {}
@@ -16,7 +66,7 @@ export class OrderService {
       headers,
       query,
     })
-    if (OrderService.webhookLogs.length > 50) {
+    if (OrderService.webhookLogs.length > 10) {
       OrderService.webhookLogs.shift()
     }
   }
@@ -25,36 +75,60 @@ export class OrderService {
     return OrderService.webhookLogs
   }
 
-
   async createOrder(dto: CreateOrderDto) {
     // 1. Validate items không rỗng
     if (!dto.items || dto.items.length === 0) {
       throw new BadRequestException('Đơn hàng phải có ít nhất 1 món')
     }
 
-    // 2. Tạo mã đơn hàng
-    const orderCode = `DH${Date.now()}`
-    const total = dto.items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
+    // 2. Validate giá tiền server-side — KHÔNG tin giá từ client
+    const itemIds = dto.items.map((i) => i.menu_item_id)
+    const { data: menuItems, error: menuError } = await this.supabase.db
+      .from('menu_items')
+      .select('id, price, is_active')
+      .in('id', itemIds)
+
+    if (menuError) {
+      throw new BadRequestException('Lỗi kiểm tra giá món ăn: ' + menuError.message)
+    }
+
+    const priceMap = new Map<string, number>(
+      (menuItems || []).map((m: { id: string; price: number }) => [m.id, m.price]),
     )
 
-    // Ghép địa chỉ chi tiết
-    const isPickup = dto.address_district === 'Tới quán lấy' || dto.address_ward === 'Tới quán lấy'
-    const fullAddress = isPickup
-      ? 'Khách tự tới quán lấy (Không giao hàng)'
-      : `${dto.address_street ? dto.address_street + ', ' : ''}${dto.address_ward}, ${dto.address_district}, Tiền Giang`
+    // Kiểm tra tất cả món có tồn tại và còn active không
+    for (const item of dto.items) {
+      if (!priceMap.has(item.menu_item_id)) {
+        throw new BadRequestException(`Món "${item.name}" không tồn tại hoặc đã bị xoá`)
+      }
+    }
+
+    // 3. Tính tổng theo giá server — bỏ qua giá client gửi lên
+    const orderCode = `DH${Date.now()}`
+    const total = dto.items.reduce((sum, item) => {
+      const serverPrice = priceMap.get(item.menu_item_id)!
+      return sum + serverPrice * item.quantity
+    }, 0)
+
+    // Ghi đè price trong items bằng giá server để lưu vào DB
+    const verifiedItems = dto.items.map((item) => ({
+      ...item,
+      price: priceMap.get(item.menu_item_id)!,
+    }))
+
+    // 4. Ghép địa chỉ
+    const fullAddress = buildFullAddress(dto)
     const noteWithAddress = `[Địa chỉ: ${fullAddress}]${dto.note ? ' - Ghi chú: ' + dto.note : ''}`
 
-    // 3. Lưu vào Supabase
-    const { data: order, error } = await this.supabase.db
+    // 5. Lưu vào Supabase
+    const { error } = await this.supabase.db
       .from('orders')
       .insert({
         order_code: orderCode,
         shop_slug: dto.shop_slug,
         customer_name: dto.customer_name,
         customer_phone: dto.customer_phone,
-        items: dto.items,
+        items: verifiedItems,
         total_price: total,
         note: noteWithAddress,
         status: 'pending',
@@ -64,19 +138,16 @@ export class OrderService {
 
     if (error) throw new BadRequestException('Lỗi lưu đơn hàng: ' + error.message)
 
-    // 4. Gửi thông báo Messenger (fire-and-forget, không block response)
-    this.sendMessengerNotification(dto, orderCode, total).catch((err) =>
+    // 6. Gửi thông báo (fire-and-forget)
+    this.sendMessengerNotification(dto, verifiedItems, orderCode, total).catch((err) =>
       console.error('Messenger notification failed:', err.message),
     )
-
-    // Gửi thông báo Telegram (fire-and-forget, không block response)
-    this.sendTelegramNotification(dto, orderCode, total).catch((err) =>
+    this.sendTelegramNotification(dto, verifiedItems, orderCode, total).catch((err) =>
       console.error('Telegram notification failed:', err.message),
     )
 
-    // 5. Trả về link mở Messenger cho khách
+    // 7. Trả về link mở Messenger cho khách
     const messengerUrl = `https://m.me/${process.env.FB_PAGE_ID}?ref=2567308--order=${orderCode}`
-
     return {
       success: true,
       order_code: orderCode,
@@ -87,28 +158,23 @@ export class OrderService {
 
   private async sendMessengerNotification(
     dto: CreateOrderDto,
+    verifiedItems: any[],
     orderCode: string,
     total: number,
   ) {
     const pageAccessToken = process.env.FB_PAGE_ACCESS_TOKEN
-    const pageInboxPsid = process.env.FB_ADMIN_PSID // PSID của tài khoản admin nhận thông báo
+    const pageInboxPsid = process.env.FB_ADMIN_PSID
 
     if (!pageAccessToken || !pageInboxPsid) {
       console.warn('Thiếu FB_PAGE_ACCESS_TOKEN hoặc FB_ADMIN_PSID — bỏ qua gửi Messenger')
       return
     }
 
-    const itemsList = dto.items
-      .map(
-        (i) =>
-          `• ${i.name} x${i.quantity} — ${(i.price * i.quantity).toLocaleString('vi-VN')}đ`,
-      )
+    const itemsList = verifiedItems
+      .map((i) => `• ${i.name} x${i.quantity} — ${(i.price * i.quantity).toLocaleString('vi-VN')}đ`)
       .join('\n')
 
-    const isPickup = dto.address_district === 'Tới quán lấy' || dto.address_ward === 'Tới quán lấy'
-    const fullAddress = isPickup
-      ? 'Khách tự tới quán lấy (Không giao hàng)'
-      : `${dto.address_street ? dto.address_street + ', ' : ''}${dto.address_ward}, ${dto.address_district}, Tiền Giang`
+    const fullAddress = buildFullAddress(dto)
 
     const message =
       `Ý Nù Quán xác nhận đơn hàng của Anh/Chị ${dto.customer_name} ạ\n\n` +
@@ -116,25 +182,20 @@ export class OrderService {
       `👤 Khách hàng: ${dto.customer_name}\n` +
       `📞 Số điện thoại: ${dto.customer_phone}\n` +
       `📍 Địa chỉ: ${fullAddress}\n\n` +
-      `📋 CHI TIẾT ĐƠN HÀNG:\n` +
-      `${itemsList}\n\n` +
+      `📋 CHI TIẾT ĐƠN HÀNG:\n${itemsList}\n\n` +
       `💰 TỔNG CỘNG: ${total.toLocaleString('vi-VN')}đ\n` +
       (dto.note ? `📝 Ghi chú: ${dto.note}` : '')
 
     await axios.post(
       `https://graph.facebook.com/v19.0/me/messages`,
-      {
-        recipient: { id: pageInboxPsid }, // Phải là PSID của admin, không phải Page ID
-        message: { text: message },
-      },
-      {
-        params: { access_token: pageAccessToken },
-      },
+      { recipient: { id: pageInboxPsid }, message: { text: message } },
+      { params: { access_token: pageAccessToken } },
     )
   }
 
   private async sendTelegramNotification(
     dto: CreateOrderDto,
+    verifiedItems: any[],
     orderCode: string,
     total: number,
   ) {
@@ -146,24 +207,12 @@ export class OrderService {
       return
     }
 
-    const escapeHtml = (text: string) => {
-      return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-    }
+    const escapeHtml = (text: string) =>
+      text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-    const nameEscaped = escapeHtml(dto.customer_name)
-    const phoneEscaped = escapeHtml(dto.customer_phone)
-    const noteEscaped = dto.note ? escapeHtml(dto.note) : ''
-    
-    const isPickup = dto.address_district === 'Tới quán lấy' || dto.address_ward === 'Tới quán lấy'
-    const fullAddress = isPickup
-      ? 'Khách tự tới quán lấy (Không giao hàng)'
-      : `${dto.address_street ? dto.address_street + ', ' : ''}${dto.address_ward}, ${dto.address_district}, Tiền Giang`
-    const addressEscaped = escapeHtml(fullAddress)
+    const fullAddress = buildFullAddress(dto)
 
-    const itemsList = dto.items
+    const itemsList = verifiedItems
       .map(
         (i) =>
           `• ${escapeHtml(i.name)} x${i.quantity} — <b>${(i.price * i.quantity).toLocaleString('vi-VN')}đ</b>`,
@@ -172,14 +221,12 @@ export class OrderService {
 
     const message =
       `🛎️ <b>ĐƠN HÀNG MỚI - ${orderCode}</b>\n` +
-      `👤 <b>Khách:</b> ${nameEscaped}\n` +
-      `📞 <b>SĐT:</b> ${phoneEscaped}\n` +
-      `📍 <b>Địa chỉ:</b> ${addressEscaped}\n` +
-      `───────────────\n` +
-      `${itemsList}\n` +
-      `───────────────\n` +
+      `👤 <b>Khách:</b> ${escapeHtml(dto.customer_name)}\n` +
+      `📞 <b>SĐT:</b> ${escapeHtml(dto.customer_phone)}\n` +
+      `📍 <b>Địa chỉ:</b> ${escapeHtml(fullAddress)}\n` +
+      `───────────────\n${itemsList}\n───────────────\n` +
       `💰 <b>Tổng:</b> ${total.toLocaleString('vi-VN')}đ\n` +
-      (noteEscaped ? `📝 <b>Ghi chú:</b> <i>${noteEscaped}</i>` : '')
+      (dto.note ? `📝 <b>Ghi chú:</b> <i>${escapeHtml(dto.note)}</i>` : '')
 
     await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       chat_id: chatId,
@@ -197,46 +244,23 @@ export class OrderService {
   }
 
   async handleWebhookPayload(body: any): Promise<void> {
-    if (body.object !== 'page') {
-      return
-    }
+    if (body.object !== 'page') return
 
     const entries = body.entry || []
     for (const entry of entries) {
-      const messagingEvents = entry.messaging || []
-      for (const event of messagingEvents) {
+      for (const event of entry.messaging || []) {
         const senderPsid = event.sender?.id
         if (!senderPsid) continue
 
         let ref: string | undefined
-
-        // 1. Check direct referral event (if user already had chat history)
-        if (event.referral && event.referral.ref) {
+        if (event.referral?.ref) {
           ref = event.referral.ref
-        }
-        // 2. Check referral inside postback event (e.g. "Get Started" click)
-        else if (event.postback && event.postback.referral && event.postback.referral.ref) {
+        } else if (event.postback?.referral?.ref) {
           ref = event.postback.referral.ref
         }
 
         if (ref) {
-          let orderCode = ref
-          if (orderCode.startsWith('2567308--')) {
-            orderCode = orderCode.replace('2567308--', '')
-          } else if (orderCode.startsWith('w2567308--')) {
-            orderCode = orderCode.replace('w2567308--', '')
-          }
-
-          if (orderCode.startsWith('order=')) {
-            orderCode = orderCode.replace('order=', '')
-          } else if (orderCode.startsWith('order--')) {
-            orderCode = orderCode.replace('order--', '')
-          } else if (orderCode.startsWith('order_')) {
-            orderCode = orderCode.replace('order_', '')
-          } else if (orderCode.startsWith('order-')) {
-            orderCode = orderCode.replace('order-', '')
-          }
-
+          const orderCode = parseOrderRefCode(ref)
           if (orderCode) {
             await this.handleFacebookReferralOrder(senderPsid, orderCode)
           }
@@ -249,7 +273,6 @@ export class OrderService {
     try {
       console.log(`Nhận sự kiện referral từ FB PSID: ${senderPsid} cho mã đơn: ${orderCode}`)
 
-      // 1. Truy vấn đơn hàng từ Supabase
       const { data: order, error } = await this.supabase.db
         .from('orders')
         .select('*')
@@ -257,51 +280,28 @@ export class OrderService {
         .single()
 
       if (error || !order) {
-        console.warn(`Không tìm thấy đơn hàng với mã ${orderCode} hoặc lỗi DB:`, error?.message)
+        console.warn(`Không tìm thấy đơn hàng ${orderCode}:`, error?.message)
         return
       }
 
-      // 2. Trích xuất địa chỉ và ghi chú từ cột `note`
-      let address = 'Không xác định'
-      let note = ''
-      if (order.note) {
-        const addressMatch = order.note.match(/\[Địa chỉ: (.*?)\]/)
-        if (addressMatch) {
-          address = addressMatch[1]
-        } else {
-          address = order.note
-        }
-        
-        const noteMatch = order.note.match(/ - Ghi chú: (.*)$/)
-        if (noteMatch) {
-          note = noteMatch[1]
-        }
-      }
-
-      // 3. Tạo danh sách các món ăn
+      const { address, note } = parseOrderNote(order.note)
       const items = (order.items || []) as any[]
       const itemsList = items
-        .map(
-          (i) =>
-            `• ${i.name} (x${i.quantity}) — ${(i.price * i.quantity).toLocaleString('vi-VN')}đ`,
-        )
+        .map((i) => `• ${i.name} (x${i.quantity}) — ${(i.price * i.quantity).toLocaleString('vi-VN')}đ`)
         .join('\n')
 
-      // 4. Định dạng tin nhắn gửi cho khách hàng
       const message =
         `Ý Nù Quán xác nhận đơn hàng của Anh/Chị ${order.customer_name} ạ\n\n` +
         `📌 THÔNG TIN ĐƠN HÀNG:\n` +
         `• Mã đơn hàng: ${order.order_code}\n` +
         `• Số điện thoại: ${order.customer_phone}\n` +
         `• Địa chỉ giao hàng: ${address}\n\n` +
-        `📋 CHI TIẾT MÓN ĂN:\n` +
-        `${itemsList}\n\n` +
+        `📋 CHI TIẾT MÓN ĂN:\n${itemsList}\n\n` +
         `💰 TỔNG TIỀN: ${order.total_price.toLocaleString('vi-VN')}đ\n` +
         (note ? `📝 Ghi chú: ${note}` : '')
 
-      // 5. Gửi tin nhắn
       await this.sendMessengerMessage(senderPsid, message)
-      console.log(`Đã gửi tin nhắn xác nhận đơn ${orderCode} tới FB PSID ${senderPsid}`)
+      console.log(`Đã gửi xác nhận đơn ${orderCode} tới PSID ${senderPsid}`)
     } catch (err) {
       console.error(`Lỗi xử lý Facebook Referral cho đơn ${orderCode}:`, err.message)
     }
@@ -313,54 +313,26 @@ export class OrderService {
       console.warn('Thiếu FB_PAGE_ACCESS_TOKEN — bỏ qua gửi tin nhắn Messenger')
       return
     }
-
     await axios.post(
       `https://graph.facebook.com/v19.0/me/messages`,
-      {
-        recipient: { id: recipientPsid },
-        message: { text },
-      },
-      {
-        params: { access_token: pageAccessToken },
-      },
+      { recipient: { id: recipientPsid }, message: { text } },
+      { params: { access_token: pageAccessToken } },
     )
   }
 
   async handleBotcakeWebhook(body: { ref?: string }) {
     const ref = body.ref
-    console.log('[Botcake Webhook] Nhận ref gửi từ Botcake:', ref)
+    console.log('[Botcake Webhook] Nhận ref:', ref)
+
     if (!ref) {
       return {
         version: 'v2',
-        content: {
-          messages: [
-            {
-              type: 'text',
-              text: '⚠️ Không nhận được tham số ref đơn hàng từ Botcake.',
-            },
-          ],
-        },
+        content: { messages: [{ type: 'text', text: '⚠️ Không nhận được tham số ref đơn hàng từ Botcake.' }] },
       }
     }
 
-    let orderCode = ref
-    if (orderCode.startsWith('2567308--')) {
-      orderCode = orderCode.replace('2567308--', '')
-    } else if (orderCode.startsWith('w2567308--')) {
-      orderCode = orderCode.replace('w2567308--', '')
-    }
+    const orderCode = parseOrderRefCode(ref)
 
-    if (orderCode.startsWith('order=')) {
-      orderCode = orderCode.replace('order=', '')
-    } else if (orderCode.startsWith('order--')) {
-      orderCode = orderCode.replace('order--', '')
-    } else if (orderCode.startsWith('order_')) {
-      orderCode = orderCode.replace('order_', '')
-    } else if (orderCode.startsWith('order-')) {
-      orderCode = orderCode.replace('order-', '')
-    }
-
-    // 1. Truy vấn đơn hàng từ Supabase
     const { data: order, error } = await this.supabase.db
       .from('orders')
       .select('*')
@@ -371,65 +343,30 @@ export class OrderService {
       return {
         version: 'v2',
         content: {
-          messages: [
-            {
-              type: 'text',
-              text: `⚠️ Không tìm thấy thông tin đơn hàng với mã ${orderCode} trong hệ thống.`,
-            },
-          ],
+          messages: [{ type: 'text', text: `⚠️ Không tìm thấy đơn hàng với mã ${orderCode}.` }],
         },
       }
     }
 
-    // 2. Trích xuất địa chỉ và ghi chú từ cột `note`
-    let address = 'Không xác định'
-    let note = ''
-    if (order.note) {
-      const addressMatch = order.note.match(/\[Địa chỉ: (.*?)\]/)
-      if (addressMatch) {
-        address = addressMatch[1]
-      } else {
-        address = order.note
-      }
-      
-      const noteMatch = order.note.match(/ - Ghi chú: (.*)$/)
-      if (noteMatch) {
-        note = noteMatch[1]
-      }
-    }
-
-    // 3. Tạo danh sách các món ăn
+    const { address, note } = parseOrderNote(order.note)
     const items = (order.items || []) as any[]
     const itemsList = items
-      .map(
-        (i) =>
-          `• ${i.name} (x${i.quantity}) — ${(i.price * i.quantity).toLocaleString('vi-VN')}đ`,
-      )
+      .map((i) => `• ${i.name} (x${i.quantity}) — ${(i.price * i.quantity).toLocaleString('vi-VN')}đ`)
       .join('\n')
 
-    // 4. Định dạng tin nhắn xác nhận đơn hàng
     const message =
       `Ý Nù Quán xác nhận đơn hàng của Anh/Chị ${order.customer_name} ạ\n\n` +
       `📌 THÔNG TIN ĐƠN HÀNG:\n` +
       `• Mã đơn hàng: ${order.order_code}\n` +
       `• Số điện thoại: ${order.customer_phone}\n` +
       `• Địa chỉ giao hàng: ${address}\n\n` +
-      `📋 CHI TIẾT MÓN ĂN:\n` +
-      `${itemsList}\n\n` +
+      `📋 CHI TIẾT MÓN ĂN:\n${itemsList}\n\n` +
       `💰 TỔNG TIỀN: ${order.total_price.toLocaleString('vi-VN')}đ\n` +
       (note ? `📝 Ghi chú: ${note}` : '')
 
-    // 5. Trả về cấu trúc Dynamic Content chuẩn của Messenger/Botcake
     return {
       version: 'v2',
-      content: {
-        messages: [
-          {
-            type: 'text',
-            text: message,
-          },
-        ],
-      },
+      content: { messages: [{ type: 'text', text: message }] },
     }
   }
 }

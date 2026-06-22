@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Query } from '@nestjs/common'
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Query, Headers } from '@nestjs/common'
 import { MenuService } from './menu.service'
 import { ApiKeyGuard } from '../common/guards/api-key.guard'
 
@@ -6,10 +6,16 @@ import { ApiKeyGuard } from '../common/guards/api-key.guard'
 export class MenuController {
   constructor(private readonly menuService: MenuService) {}
 
-  // Public: khách hàng xem menu (hoặc admin xem tất cả nếu truyền thêm ?all=true)
+  // Public: khách hàng xem menu (hoặc admin xem tất cả nếu truyền thêm ?all=true kèm API key hợp lệ)
   @Get(':slug')
-  getMenu(@Param('slug') slug: string, @Query('all') all?: string) {
-    return this.menuService.getMenuBySlug(slug, all === 'true')
+  getMenu(
+    @Param('slug') slug: string,
+    @Query('all') all?: string,
+    @Headers('x-api-key') apiKey?: string,
+  ) {
+    const validKey = process.env.ADMIN_API_KEY || 'ynuquan_secret_api_key_2026'
+    const includeInactive = all === 'true' && apiKey === validKey
+    return this.menuService.getMenuBySlug(slug, includeInactive)
   }
 
   // Admin only: cần header x-api-key
