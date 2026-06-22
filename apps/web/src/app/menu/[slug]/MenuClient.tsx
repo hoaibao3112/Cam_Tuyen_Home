@@ -41,7 +41,7 @@ export default function MenuClient({
     const subs = itemsInCat
       .map((i) => i.sub_category?.trim())
       .filter((s): s is string => !!s)
-    
+
     // Normalize: Capitalize first letter to merge e.g., 'bánh tráng' and 'Bánh tráng'
     const normalized = subs.map(
       (s) => s.charAt(0).toUpperCase() + s.slice(1)
@@ -156,11 +156,10 @@ export default function MenuClient({
                     setActiveCategory(cat)
                     setActiveSubCategory('all')
                   }}
-                  className={`flex-1 text-center py-1.5 sm:py-2 px-0.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-300 ${
-                    activeCategory === cat
+                  className={`flex-1 text-center py-1.5 sm:py-2 px-0.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-300 ${activeCategory === cat
                       ? 'bg-[#1D4ED8] text-white shadow-xs'
                       : 'bg-white text-[#6B7280] border border-[#F3F4F6] hover:bg-slate-50'
-                  }`}
+                    }`}
                 >
                   {cat}
                 </button>
@@ -172,11 +171,10 @@ export default function MenuClient({
               <div className="flex items-center gap-2 overflow-x-auto scrollbar-none px-3 py-2.5 bg-slate-50/80 backdrop-blur-xs border-b border-[#F3F4F6] transition-all duration-300">
                 <button
                   onClick={() => setActiveSubCategory('all')}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-200 ${
-                    activeSubCategory === 'all'
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-200 ${activeSubCategory === 'all'
                       ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] shadow-xs'
                       : 'bg-white text-[#6B7280] border border-[#E5E7EB]/50 hover:bg-slate-50'
-                  }`}
+                    }`}
                 >
                   Tất cả
                 </button>
@@ -184,11 +182,10 @@ export default function MenuClient({
                   <button
                     key={sub}
                     onClick={() => setActiveSubCategory(sub)}
-                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-200 ${
-                      activeSubCategory === sub
+                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-200 ${activeSubCategory === sub
                         ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] shadow-xs'
                         : 'bg-white text-[#6B7280] border border-[#E5E7EB]/50 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     {sub}
                   </button>
@@ -196,11 +193,10 @@ export default function MenuClient({
                 {hasNullSubCategory && (
                   <button
                     onClick={() => setActiveSubCategory('other')}
-                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-200 ${
-                      activeSubCategory === 'other'
+                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-200 ${activeSubCategory === 'other'
                         ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] shadow-xs'
                         : 'bg-white text-[#6B7280] border border-[#E5E7EB]/50 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     Món khác
                   </button>
@@ -483,12 +479,11 @@ export default function MenuClient({
       )}
       {/* Nút Facebook nổi ở góc phải dưới */}
       <a
-        href="https://facebook.com/1200246289829421"
+        href="https://www.facebook.com/profile.php?id=61587297699068"
         target="_blank"
         rel="noopener noreferrer"
-        className={`fixed ${
-          totalQty > 0 ? 'bottom-24 lg:bottom-6' : 'bottom-6'
-        } right-6 z-50 bg-[#1877F2] hover:bg-[#166FE5] text-white p-3 rounded-full shadow-[0_4px_16px_rgba(24,119,242,0.4)] hover:shadow-[0_6px_20px_rgba(24,119,242,0.6)] hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center size-12 sm:size-14`}
+        className={`fixed ${totalQty > 0 ? 'bottom-24 lg:bottom-6' : 'bottom-6'
+          } right-6 z-50 bg-[#1877F2] hover:bg-[#166FE5] text-white p-3 rounded-full shadow-[0_4px_16px_rgba(24,119,242,0.4)] hover:shadow-[0_6px_20px_rgba(24,119,242,0.6)] hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center size-12 sm:size-14`}
         aria-label="Facebook Page"
       >
         <svg className="size-6 sm:size-7 fill-current" viewBox="0 0 24 24">
