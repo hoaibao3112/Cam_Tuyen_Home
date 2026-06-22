@@ -17,7 +17,7 @@ export default function MenuClient({
   slug: string
 }) {
   const [cart, setCart] = useState<CartItem[]>([])
-  const [activeCategory, setActiveCategory] = useState<string>('all')
+  const [activeCategory, setActiveCategory] = useState<string>('Món ăn healthy')
   const [activeSubCategory, setActiveSubCategory] = useState<string>('all')
   const [showOrderPanel, setShowOrderPanel] = useState(false)
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
@@ -147,21 +147,8 @@ export default function MenuClient({
 
           {/* Group sticky bộ lọc */}
           <div className="sticky top-0 z-20 bg-white shadow-xs">
-            {/* Tab categories (Pill style - Fixed 4 buttons across viewport on mobile) */}
-            <div className="flex justify-between gap-1 sm:gap-2.5 px-2 sm:px-4 py-3 bg-white border-b border-[#F3F4F6]">
-              <button
-                onClick={() => {
-                  setActiveCategory('all')
-                  setActiveSubCategory('all')
-                }}
-                className={`flex-1 text-center py-1.5 sm:py-2 px-0.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-300 ${
-                  activeCategory === 'all'
-                    ? 'bg-[#1D4ED8] text-white shadow-xs'
-                    : 'bg-white text-[#6B7280] border border-[#F3F4F6] hover:bg-slate-50'
-                }`}
-              >
-                Tất cả
-              </button>
+            {/* Tab categories (Pill style - Fixed buttons across viewport on mobile) */}
+            <div className="flex justify-between gap-1.5 sm:gap-2.5 px-2 sm:px-4 py-3 bg-white border-b border-[#F3F4F6]">
               {categories.map((cat) => (
                 <button
                   key={cat}
