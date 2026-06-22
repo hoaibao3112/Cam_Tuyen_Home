@@ -37,6 +37,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+*.tsbuildinfo
 
 # Image backups
 apps/web/public/images/_backup/

@@ -18,6 +18,7 @@ export default function MenuClient({
 }) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [activeCategory, setActiveCategory] = useState<string>('all')
+  const [activeSubCategory, setActiveSubCategory] = useState<string>('all')
   const [showOrderPanel, setShowOrderPanel] = useState(false)
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
 
@@ -34,6 +35,26 @@ export default function MenuClient({
     })
   }, [items])
 
+  const subCategories = useMemo(() => {
+    if (activeCategory === 'all') return []
+    const itemsInCat = items.filter((i) => i.category === activeCategory)
+    const subs = itemsInCat
+      .map((i) => i.sub_category?.trim())
+      .filter((s): s is string => !!s)
+    
+    // Normalize: Capitalize first letter to merge e.g., 'bánh tráng' and 'Bánh tráng'
+    const normalized = subs.map(
+      (s) => s.charAt(0).toUpperCase() + s.slice(1)
+    )
+    return Array.from(new Set(normalized)).sort((a, b) => a.localeCompare(b))
+  }, [items, activeCategory])
+
+  const hasNullSubCategory = useMemo(() => {
+    if (activeCategory === 'all') return false
+    const itemsInCat = items.filter((i) => i.category === activeCategory)
+    return itemsInCat.some((i) => !i.sub_category)
+  }, [items, activeCategory])
+
   const filtered = useMemo(() => {
     const categoryOrder = ['Món ăn healthy', 'Món ăn vặt', 'Nước uống']
     const sorted = [...items].sort((a, b) => {
@@ -45,9 +66,25 @@ export default function MenuClient({
       return idxA - idxB
     })
 
-    if (activeCategory === 'all') return sorted
-    return sorted.filter((i) => i.category === activeCategory)
-  }, [items, activeCategory])
+    let result = sorted
+    if (activeCategory !== 'all') {
+      result = result.filter((i) => i.category === activeCategory)
+
+      if (activeSubCategory !== 'all') {
+        if (activeSubCategory === 'other') {
+          result = result.filter((i) => !i.sub_category)
+        } else {
+          result = result.filter((i) => {
+            const sub = i.sub_category?.trim()
+            if (!sub) return false
+            const normalizedSub = sub.charAt(0).toUpperCase() + sub.slice(1)
+            return normalizedSub === activeSubCategory
+          })
+        }
+      }
+    }
+    return result
+  }, [items, activeCategory, activeSubCategory])
 
   const totalQty = cart.reduce((s, i) => s + i.quantity, 0)
   const totalPrice = cart.reduce((s, i) => s + i.price * i.quantity, 0)
@@ -108,31 +145,81 @@ export default function MenuClient({
             </p>
           </div>
 
-          {/* Tab categories (Pill style - Fixed 4 buttons across viewport on mobile) */}
-          <div className="flex justify-between gap-1 sm:gap-2.5 px-2 sm:px-4 py-3 bg-white border-b border-[#F3F4F6] sticky top-0 z-20">
-            <button
-              onClick={() => setActiveCategory('all')}
-              className={`flex-1 text-center py-1.5 sm:py-2 px-0.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-300 ${
-                activeCategory === 'all'
-                  ? 'bg-[#1D4ED8] text-white shadow-xs'
-                  : 'bg-white text-[#6B7280] border border-[#F3F4F6] hover:bg-slate-50'
-              }`}
-            >
-              Tất cả
-            </button>
-            {categories.map((cat) => (
+          {/* Group sticky bộ lọc */}
+          <div className="sticky top-0 z-20 bg-white shadow-xs">
+            {/* Tab categories (Pill style - Fixed 4 buttons across viewport on mobile) */}
+            <div className="flex justify-between gap-1 sm:gap-2.5 px-2 sm:px-4 py-3 bg-white border-b border-[#F3F4F6]">
               <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => {
+                  setActiveCategory('all')
+                  setActiveSubCategory('all')
+                }}
                 className={`flex-1 text-center py-1.5 sm:py-2 px-0.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-300 ${
-                  activeCategory === cat
+                  activeCategory === 'all'
                     ? 'bg-[#1D4ED8] text-white shadow-xs'
                     : 'bg-white text-[#6B7280] border border-[#F3F4F6] hover:bg-slate-50'
                 }`}
               >
-                {cat}
+                Tất cả
               </button>
-            ))}
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setActiveCategory(cat)
+                    setActiveSubCategory('all')
+                  }}
+                  className={`flex-1 text-center py-1.5 sm:py-2 px-0.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-300 ${
+                    activeCategory === cat
+                      ? 'bg-[#1D4ED8] text-white shadow-xs'
+                      : 'bg-white text-[#6B7280] border border-[#F3F4F6] hover:bg-slate-50'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab subcategories (Scrollable horizontally on mobile, subtle layout) */}
+            {subCategories.length > 0 && (
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-none px-3 py-2.5 bg-slate-50/80 backdrop-blur-xs border-b border-[#F3F4F6] transition-all duration-300">
+                <button
+                  onClick={() => setActiveSubCategory('all')}
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-200 ${
+                    activeSubCategory === 'all'
+                      ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] shadow-xs'
+                      : 'bg-white text-[#6B7280] border border-[#E5E7EB]/50 hover:bg-slate-50'
+                  }`}
+                >
+                  Tất cả
+                </button>
+                {subCategories.map((sub) => (
+                  <button
+                    key={sub}
+                    onClick={() => setActiveSubCategory(sub)}
+                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-200 ${
+                      activeSubCategory === sub
+                        ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] shadow-xs'
+                        : 'bg-white text-[#6B7280] border border-[#E5E7EB]/50 hover:bg-slate-50'
+                    }`}
+                  >
+                    {sub}
+                  </button>
+                ))}
+                {hasNullSubCategory && (
+                  <button
+                    onClick={() => setActiveSubCategory('other')}
+                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-200 ${
+                      activeSubCategory === 'other'
+                        ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] shadow-xs'
+                        : 'bg-white text-[#6B7280] border border-[#E5E7EB]/50 hover:bg-slate-50'
+                    }`}
+                  >
+                    Món khác
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Grid món ăn (Cố định 4 cột trên mobile, 3 cột trên desktop) */}
