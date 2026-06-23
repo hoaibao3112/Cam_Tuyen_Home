@@ -216,25 +216,25 @@ export default function AdminPage() {
 
     const fileExt = file.name.split('.').pop()?.toLowerCase()
     if (fileExt === 'heic' || fileExt === 'heif') {
-      showMsg('�?nh d?ng HEIC (iPhone) kh�ng h? tr? tr�n Web!', 'error')
+      showMsg('Định dạng HEIC (iPhone) không hỗ trợ trên Web!', 'error')
       alert(
-        'LUU � QUAN TR?NG CHO IPHONE/IPAD (iOS):\n\n' +
-        '?nh d?nh d?ng HEIC tr?c ti?p t? m�y ?nh iPhone kh�ng th? hi?n th? tr�n trang web.\n\n' +
-        'C�ch kh?c ph?c:\n' +
-        '1. Vui l�ng ch?n ?nh t? "Thu vi?n ?nh" (Photo Library) thay v� m?c "T?p" (Files) d? iOS t? d?ng chuy?n d?i sang JPG tru?c khi t?i l�n.\n' +
-        '2. Ho?c chuy?n d?i ?nh sang JPG/PNG tru?c khi t?i l�n.'
+        'LƯU Ý QUAN TRỌNG CHO IPHONE/IPAD (iOS):\n\n' +
+        'Ảnh định dạng HEIC trực tiếp từ máy ảnh iPhone không thể hiển thị trên trang web.\n\n' +
+        'Cách khắc phục:\n' +
+        '1. Vui lòng chọn ảnh từ "Thư viện ảnh" (Photo Library) thay vì mục "Tệp" (Files) để iOS tự động chuyển đổi sang JPG trước khi tải lên.\n' +
+        '2. Hoặc chuyển đổi ảnh sang JPG/PNG trước khi tải lên.'
       )
       return
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      showMsg('Dung lu?ng ?nh t?i da l� 5MB!', 'error')
+      showMsg('Dung lượng ảnh tối đa là 5MB!', 'error')
       return
     }
 
     setUploading(true)
     try {
-      // G?i l�n backend d? compress + upload (kh�ng d�ng anon key t? client n?a)
+      // Gửi lên backend để compress + upload (không dùng anon key từ client nữa)
       const formData = new FormData()
       formData.append('file', file)
       formData.append('shopSlug', shopSlug)
@@ -242,27 +242,28 @@ export default function AdminPage() {
       const res = await fetch('/api/admin/menu/upload-image', {
         method: 'POST',
         body: formData,
-        // Kh�ng set Content-Type � browser t? set multipart/form-data v?i boundary
+        // Không set Content-Type — browser tự set multipart/form-data với boundary
       })
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({ message: 'L?i kh�ng x�c d?nh' }))
+        const errData = await res.json().catch(() => ({ message: 'Lỗi không xác định' }))
         throw new Error(errData.message || `HTTP ${res.status}`)
       }
 
       const result = await res.json()
-      if (!result.url) throw new Error('Kh�ng nh?n du?c URL ?nh t? server')
+      if (!result.url) throw new Error('Không nhận được URL ảnh từ server')
 
       setForm(prev => ({ ...prev, image_url: result.url }))
       const saved = result.stats?.savedKB
-      showMsg(`T?i ?nh th�nh c�ng!${saved ? ` (ti?t ki?m ${saved}KB sau n�n)` : ''}`)
+      showMsg(`Tải ảnh thành công!${saved ? ` (tiết kiệm ${saved}KB sau nén)` : ''}`)
     } catch (err: any) {
-      showMsg(err.message || 'L?i khi t?i ?nh l�n!', 'error')
+      showMsg(err.message || 'Lỗi khi tải ảnh lên!', 'error')
       console.error(err)
     } finally {
       setUploading(false)
     }
   }
+
   const handleRemoveImage = () => {
     setForm(prev => ({ ...prev, image_url: '' }))
   }

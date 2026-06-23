@@ -6,18 +6,21 @@ const playball = Playball({
   weight: '400',
   subsets: ['latin', 'vietnamese'],
   variable: '--font-playball',
+  display: 'swap',
 })
 
 const dancingScript = Dancing_Script({
   weight: ['400', '700'],
   subsets: ['latin', 'vietnamese'],
   variable: '--font-dancing',
+  display: 'swap',
 })
 
 const beVietnamPro = Be_Vietnam_Pro({
   weight: ['400', '500', '600', '700', '800'],
   subsets: ['latin', 'vietnamese'],
   variable: '--font-be-vietnam',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {

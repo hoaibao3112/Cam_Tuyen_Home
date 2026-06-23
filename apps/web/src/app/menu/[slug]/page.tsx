@@ -15,13 +15,19 @@ async function getMenuItems(slug: string): Promise<MenuItem[]> {
   try {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/menu/${slug}`,
-      { next: { revalidate: 60 } }
+      { next: { revalidate: 300, tags: ['menu', `menu-${slug}`] } }
     )
     if (!res.ok) return []
     return res.json()
   } catch {
     return []
   }
+}
+
+export async function generateStaticParams() {
+  return [
+    { slug: 'quan' }
+  ]
 }
 
 export default async function MenuPage({

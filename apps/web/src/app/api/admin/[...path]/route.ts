@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { revalidateTag } from 'next/cache'
 
 /**
  * Proxy bảo mật cho các admin API call.
@@ -77,6 +78,18 @@ async function handleRequest(
   })
 
   const data = await response.json().catch(() => ({}))
+
+  // Nếu là thao tác ghi thành công đối với menu, xóa cache tag 'menu'
+  if (response.ok && ['POST', 'PUT', 'DELETE'].includes(req.method)) {
+    if (pathSegments.startsWith('menu')) {
+      try {
+        revalidateTag('menu')
+      } catch (e) {
+        console.error('Error revalidating tag:', e)
+      }
+    }
+  }
+
   return NextResponse.json(data, { status: response.status })
 }
 
