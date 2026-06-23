@@ -18,6 +18,16 @@ describe('OrderService', () => {
       select: jest.fn().mockReturnThis(),
       single: jest.fn(),
       eq: jest.fn().mockReturnThis(),
+      in: jest.fn().mockResolvedValue({
+        data: [
+          {
+            id: 'e4a5fdc8-1111-2222-3333-444444444444',
+            price: 45000,
+            is_active: true,
+          },
+        ],
+        error: null,
+      }),
     }
 
     const module: TestingModule = await Test.createTestingModule({
@@ -83,7 +93,7 @@ describe('OrderService', () => {
     expect(result.order_code).toBeDefined()
     expect(result.total_price).toBe(90000)
     expect(result.messenger_url).toContain('test-fb-page-id')
-    expect(result.messenger_url).toContain(`ref=2567308--order=${result.order_code}`)
+    expect(result.messenger_url).toContain(`ref=2567571--order=${result.order_code}`)
 
     // Chờ một khoảng thời gian ngắn để các tác vụ bất đồng bộ fire-and-forget chạy xong
     await new Promise((resolve) => setTimeout(resolve, 50))
@@ -224,7 +234,7 @@ describe('OrderService', () => {
               {
                 sender: { id: 'user-psid-1' },
                 referral: {
-                  ref: '2567308--order=DH123456',
+                  ref: '2567571--order=DH123456',
                 },
               },
             ],
@@ -386,7 +396,7 @@ describe('OrderService', () => {
     it('[HAPPY PATH] handleBotcakeWebhook xử lý khi ref có tiền tố tool ID và order=', async () => {
       mockSupabaseClient.single.mockResolvedValue({ data: mockOrder, error: null })
 
-      const result = await service.handleBotcakeWebhook({ ref: '2567308--order=DH123456' })
+      const result = await service.handleBotcakeWebhook({ ref: '2567571--order=DH123456' })
 
       expect(mockSupabaseClient.eq).toHaveBeenCalledWith('order_code', 'DH123456')
       expect(result.content.messages[0].text).toContain('DH123456')
@@ -421,7 +431,7 @@ describe('OrderService', () => {
 
       const result = await service.handleBotcakeWebhook({ ref: 'DH_INVALID' })
       expect(result.version).toBe('v2')
-      expect(result.content.messages[0].text).toContain('Không tìm thấy thông tin đơn hàng')
+      expect(result.content.messages[0].text).toContain('Không tìm thấy đơn hàng')
     })
   })
 })

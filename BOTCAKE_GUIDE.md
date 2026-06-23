@@ -48,7 +48,7 @@ sequenceDiagram
      - Ô **Key**: Gõ chữ `order` (đây là từ khóa cấu trúc trong URL code backend tạo ra: `ref=TOOL_ID--order=MÃ_ĐƠN`).
      - Ô **Custom Field**: Chọn trường `order_code` vừa tạo ở Bước 1 từ menu thả xuống.
 4. ⚠️ **BẮT BUỘC**: Nhấn nút **Lưu (Save)** màu xanh dương ở góc trên bên phải màn hình. Nếu không bấm nút này, cấu hình ánh xạ tham số sẽ không hoạt động.
-5. Ghi lại **ID của công cụ** này (nằm ở đuôi của URL chỉnh sửa trên trình duyệt hoặc hiển thị trong link Ref mặc định, ví dụ: `https://botcake.io/.../tools/2567308` thì ID là `2567308`).
+5. Ghi lại **ID của công cụ** này (nằm ở đuôi của URL chỉnh sửa trên trình duyệt hoặc hiển thị trong link Ref mặc định, ví dụ: `https://botcake.io/.../tools/2567571` thì ID là `2567571`).
 
 ---
 
@@ -98,7 +98,7 @@ FB_ADMIN_PSID="psid_admin_moi"
 ```
 
 ### 2. Cập Nhật Tool ID Trong Backend
-Nếu ID của công cụ Messenger Ref URL trên trang mới khác với `2567308`, bạn cần sửa đổi giá trị này trong code backend:
+Nếu ID của công cụ Messenger Ref URL trên trang mới khác với `2567571`, bạn cần sửa đổi giá trị này trong code backend:
 
 Mở file [order.service.ts](file:///d:/freelancer/YNuQuan/apps/api/src/order/order.service.ts):
 1. **Cập nhật hàm tạo URL**:
