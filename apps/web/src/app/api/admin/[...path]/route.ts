@@ -8,9 +8,9 @@ import { cookies } from 'next/headers'
  * - Tự gắn x-api-key từ env server-side trước khi forward lên NestJS
  *
  * Route: /api/admin/[...path]
- * Ví dụ: POST /api/admin/menu → POST {API_URL}/menu (với x-api-key tự động)
- *        PUT  /api/admin/menu/123 → PUT {API_URL}/menu/123
- *        DELETE /api/admin/menu/123 → DELETE {API_URL}/menu/123
+ * Ví dụ: POST /api/admin/menu             → POST {API_URL}/menu
+ *        PUT  /api/admin/menu/123          → PUT  {API_URL}/menu/123
+ *        POST /api/admin/menu/upload-image → POST {API_URL}/menu/upload-image (multipart)
  */
 
 async function getSupabaseSession() {
@@ -43,25 +43,36 @@ async function handleRequest(
   // 2. Xây dựng URL đích
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
   const pathSegments = params.path.join('/')
-  const targetUrl = `${apiUrl}/${pathSegments}`
+  const searchParams = req.nextUrl.searchParams.toString()
+  const targetUrl = `${apiUrl}/${pathSegments}${searchParams ? '?' + searchParams : ''}`
 
   // 3. Lấy API key từ env server-side (KHÔNG bao giờ ra client)
   const adminApiKey = process.env.ADMIN_API_KEY || 'ynuquan_secret_api_key_2026'
 
-  // 4. Forward request
-  const headers: Record<string, string> = {
+  // 4. Detect nếu là multipart (upload ảnh) — forward nguyên body + Content-Type
+  const isMultipart = req.headers.get('content-type')?.includes('multipart/form-data')
+
+  let forwardHeaders: Record<string, string> = {
     'x-api-key': adminApiKey,
-    'Content-Type': 'application/json',
   }
 
-  let body: string | undefined
+  let body: BodyInit | undefined
+
   if (req.method !== 'GET' && req.method !== 'DELETE') {
-    body = await req.text()
+    if (isMultipart) {
+      // Forward multipart nguyên vẹn — để multer phía NestJS xử lý
+      // Phải giữ Content-Type gốc (có boundary) thì multer mới parse được
+      forwardHeaders['content-type'] = req.headers.get('content-type')!
+      body = await req.arrayBuffer().then(buf => Buffer.from(buf))
+    } else {
+      forwardHeaders['content-type'] = 'application/json'
+      body = await req.text()
+    }
   }
 
   const response = await fetch(targetUrl, {
     method: req.method,
-    headers,
+    headers: forwardHeaders,
     body,
   })
 

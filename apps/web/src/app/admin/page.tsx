@@ -216,66 +216,53 @@ export default function AdminPage() {
 
     const fileExt = file.name.split('.').pop()?.toLowerCase()
     if (fileExt === 'heic' || fileExt === 'heif') {
-      showMsg('Định dạng HEIC (iPhone) không hỗ trợ trên Web!', 'error')
+      showMsg('�?nh d?ng HEIC (iPhone) kh�ng h? tr? tr�n Web!', 'error')
       alert(
-        'LƯU Ý QUAN TRỌNG CHO IPHONE/IPAD (iOS):\n\n' +
-        'Ảnh định dạng HEIC trực tiếp từ máy ảnh iPhone không thể hiển thị trên trang web.\n\n' +
-        'Cách khắc phục:\n' +
-        '1. Vui lòng chọn ảnh từ "Thư viện ảnh" (Photo Library) thay vì mục "Tệp" (Files) để iOS tự động chuyển đổi sang JPG trước khi tải lên.\n' +
-        '2. Hoặc chuyển đổi ảnh sang JPG/PNG trước khi tải lên.'
+        'LUU � QUAN TR?NG CHO IPHONE/IPAD (iOS):\n\n' +
+        '?nh d?nh d?ng HEIC tr?c ti?p t? m�y ?nh iPhone kh�ng th? hi?n th? tr�n trang web.\n\n' +
+        'C�ch kh?c ph?c:\n' +
+        '1. Vui l�ng ch?n ?nh t? "Thu vi?n ?nh" (Photo Library) thay v� m?c "T?p" (Files) d? iOS t? d?ng chuy?n d?i sang JPG tru?c khi t?i l�n.\n' +
+        '2. Ho?c chuy?n d?i ?nh sang JPG/PNG tru?c khi t?i l�n.'
       )
       return
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      showMsg('Dung lượng ảnh tối đa là 5MB!', 'error')
+      showMsg('Dung lu?ng ?nh t?i da l� 5MB!', 'error')
       return
     }
 
     setUploading(true)
     try {
-      const randomStr = Math.random().toString(36).substring(2, 9)
-      const fileName = `${shopSlug}/${Date.now()}-${randomStr}.${fileExt}`
+      // G?i l�n backend d? compress + upload (kh�ng d�ng anon key t? client n?a)
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('shopSlug', shopSlug)
 
-      let contentType = file.type
-      if (!contentType) {
-        if (fileExt === 'jpg' || fileExt === 'jpeg') contentType = 'image/jpeg'
-        else if (fileExt === 'png') contentType = 'image/png'
-        else if (fileExt === 'webp') contentType = 'image/webp'
-        else if (fileExt === 'gif') contentType = 'image/gif'
-        else contentType = 'application/octet-stream'
+      const res = await fetch('/api/admin/menu/upload-image', {
+        method: 'POST',
+        body: formData,
+        // Kh�ng set Content-Type � browser t? set multipart/form-data v?i boundary
+      })
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ message: 'L?i kh�ng x�c d?nh' }))
+        throw new Error(errData.message || `HTTP ${res.status}`)
       }
 
-      const { data, error } = await supabase.storage
-        .from('menu-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true,
-          contentType: contentType
-        })
+      const result = await res.json()
+      if (!result.url) throw new Error('Kh�ng nh?n du?c URL ?nh t? server')
 
-      if (error) {
-        throw error
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('menu-images')
-        .getPublicUrl(fileName)
-
-      if (!urlData || !urlData.publicUrl) {
-        throw new Error('Không lấy được link ảnh công khai')
-      }
-
-      setForm(prev => ({ ...prev, image_url: urlData.publicUrl }))
-      showMsg('Tải ảnh lên thành công!')
+      setForm(prev => ({ ...prev, image_url: result.url }))
+      const saved = result.stats?.savedKB
+      showMsg(`T?i ?nh th�nh c�ng!${saved ? ` (ti?t ki?m ${saved}KB sau n�n)` : ''}`)
     } catch (err: any) {
-      showMsg(err.message || 'Lỗi khi tải ảnh lên!', 'error')
+      showMsg(err.message || 'L?i khi t?i ?nh l�n!', 'error')
       console.error(err)
     } finally {
       setUploading(false)
     }
   }
-
   const handleRemoveImage = () => {
     setForm(prev => ({ ...prev, image_url: '' }))
   }

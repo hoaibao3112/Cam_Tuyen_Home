@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
 
 type FormState = {
   name: string
@@ -192,11 +193,7 @@ export default function ProductFormModal({
               <div className="relative border border-slate-200 rounded-xl p-2 bg-slate-50 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="size-16 rounded-lg overflow-hidden border border-slate-200 bg-white relative flex-shrink-0">
-                    <img 
-                      src={form.image_url} 
-                      alt="Preview" 
-                      className="size-full object-cover"
-                    />
+                    <Image src={form.image_url} alt="Preview" fill sizes="64px" className="object-cover" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-slate-700 truncate max-w-[200px]">
