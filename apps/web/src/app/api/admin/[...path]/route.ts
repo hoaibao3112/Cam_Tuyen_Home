@@ -80,7 +80,7 @@ async function handleRequest(
   const data = await response.json().catch(() => ({}))
 
   // Nếu là thao tác ghi thành công đối với menu, xóa cache tag 'menu'
-  if (response.ok && ['POST', 'PUT', 'DELETE'].includes(req.method)) {
+  if (response.ok && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
     if (pathSegments.startsWith('menu')) {
       try {
         revalidateTag('menu')
@@ -100,6 +100,9 @@ export async function POST(req: NextRequest, ctx: { params: { path: string[] } }
   return handleRequest(req, ctx)
 }
 export async function PUT(req: NextRequest, ctx: { params: { path: string[] } }) {
+  return handleRequest(req, ctx)
+}
+export async function PATCH(req: NextRequest, ctx: { params: { path: string[] } }) {
   return handleRequest(req, ctx)
 }
 export async function DELETE(req: NextRequest, ctx: { params: { path: string[] } }) {
