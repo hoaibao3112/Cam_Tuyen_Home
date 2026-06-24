@@ -124,9 +124,15 @@ export default function AdminPage() {
     try {
       const res = await fetch(`/api/admin/categories/${currentShopSlug}`)
       const data = await res.json()
-      setCategoriesList(data || [])
+      if (Array.isArray(data)) {
+        setCategoriesList(data)
+      } else {
+        console.error('Lỗi nhận dữ liệu categories (không phải Array):', data)
+        setCategoriesList([])
+      }
     } catch (err) {
       console.error('Lỗi khi tải danh sách category:', err)
+      setCategoriesList([])
     }
   }
 
