@@ -103,7 +103,7 @@ export default function MenuClient({
   }, [items])
 
   // Chỉ hiện subcategory filter khi đang ở nhóm "Đồ ăn vặt"
-  const SUB_CATEGORY_ENABLED = 'Đồ ăn vặt'
+  const SUB_CATEGORY_ENABLED = 'Món ăn vặt'
 
   const subCategories = useMemo(() => {
     if (activeCategory === 'all') return []
