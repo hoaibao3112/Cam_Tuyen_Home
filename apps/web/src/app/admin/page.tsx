@@ -86,12 +86,23 @@ export default function AdminPage() {
   // Danh sách categories thực tế
   const [categoriesList, setCategoriesList] = useState<Category[]>([])
 
+  // Track nhóm phụ đã bị xóa thủ công (key: "category::subCategory")
+  const [deletedSubCategoriesSet, setDeletedSubCategoriesSet] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set()
+    try {
+      const saved = localStorage.getItem('deletedSubCategories')
+      return saved ? new Set(JSON.parse(saved) as string[]) : new Set()
+    } catch {
+      return new Set()
+    }
+  })
+
   // Dynamic categories: loaded from backend
   const dynamicCategories = useMemo(() => {
     return categoriesList.map(c => c.name)
   }, [categoriesList])
 
-  // Dynamic subcategories mapping
+  // Dynamic subcategories mapping — loại trừ những nhóm phụ đã bị xóa
   const dynamicSubCategoriesMap = useMemo(() => {
     const map: Record<string, Set<string>> = {}
     Object.entries(SUB_CATEGORIES_MAP).forEach(([cat, subs]) => {
@@ -105,10 +116,12 @@ export default function AdminPage() {
     })
     const result: Record<string, string[]> = {}
     Object.entries(map).forEach(([cat, set]) => {
-      result[cat] = Array.from(set)
+      result[cat] = Array.from(set).filter(
+        sub => !deletedSubCategoriesSet.has(`${cat}::${sub}`)
+      )
     })
     return result
-  }, [items])
+  }, [items, deletedSubCategoriesSet])
 
   const fetchItems = async (currentShopSlug = shopSlug) => {
     if (!currentShopSlug) return
@@ -388,11 +401,21 @@ export default function AdminPage() {
           })
         )
       )
+      // Lưu vào set để loại khỏi dropdown ngay lập tức
+      const key = `${category}::${subCategory}`
+      setDeletedSubCategoriesSet(prev => {
+        const next = new Set(prev)
+        next.add(key)
+        try {
+          localStorage.setItem('deletedSubCategories', JSON.stringify(Array.from(next)))
+        } catch { /* ignore */ }
+        return next
+      })
       await fetchItems(shopSlug)
       if (form.sub_category === subCategory) {
         setForm(prev => ({ ...prev, sub_category: '', customSubCategory: '' }))
       }
-      showMsg(`Đã xóa nhóm phụ "${subCategory}" (${targetItems.length} sản phẩm đã được cập nhật)`)
+      showMsg(`Đã xóa nhóm phụ "${subCategory}"${targetItems.length > 0 ? ` (${targetItems.length} sản phẩm đã được cập nhật)` : ''}`)
     } catch (err) {
       showMsg('Lỗi khi xóa nhóm phụ!', 'error')
       console.error(err)
