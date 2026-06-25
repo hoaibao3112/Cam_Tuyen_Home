@@ -30,7 +30,6 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
   const [deliveryMethod, setDeliveryMethod] = useState<'ship' | 'pickup'>('ship')
   const [district, setDistrict] = useState('')
   const [ward, setWard] = useState('')
-  const [street, setStreet] = useState('')
 
   const total = cart.reduce((s, i) => s + i.price * i.quantity, 0)
   const totalQty = cart.reduce((s, i) => s + i.quantity, 0)
@@ -44,13 +43,10 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
       const storedPhone = localStorage.getItem('ynq_customer_phone')
       const storedDistrict = localStorage.getItem('ynq_customer_district')
       const storedWard = localStorage.getItem('ynq_customer_ward')
-      const storedStreet = localStorage.getItem('ynq_customer_street')
-
       if (storedName) setName(storedName)
       if (storedPhone) setPhone(storedPhone)
       if (storedDistrict) setDistrict(storedDistrict)
       if (storedWard) setWard(storedWard)
-      if (storedStreet) setStreet(storedStreet)
     } catch (e) {
       console.error('Error loading customer details from localStorage', e)
     }
@@ -81,7 +77,6 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
               note: note.trim(),
               address_district: deliveryMethod === 'ship' ? district : 'Tới quán lấy',
               address_ward: deliveryMethod === 'ship' ? ward : 'Tới quán lấy',
-              address_street: deliveryMethod === 'ship' ? street.trim() : '',
               items: cart.map((c) => ({
                 menu_item_id: c.id,
                 name: c.name,
@@ -103,7 +98,6 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
           if (deliveryMethod === 'ship') {
             localStorage.setItem('ynq_customer_district', district)
             localStorage.setItem('ynq_customer_ward', ward)
-            localStorage.setItem('ynq_customer_street', street.trim())
           }
         } catch (e) {
           console.error('Error saving customer details to localStorage', e)
@@ -293,19 +287,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                       </select>
                     </div>
 
-                    {/* Địa chỉ chi tiết */}
-                    <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                      <label className="text-slate-550 text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
-                        Số nhà, tên đường (tùy chọn)
-                      </label>
-                      <input
-                        type="text"
-                        value={street}
-                        onChange={(e) => setStreet(e.target.value)}
-                        placeholder="Ví dụ: 123 Lê Lợi"
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200"
-                      />
-                    </div>
+
                   </>
                 )}
 
