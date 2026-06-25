@@ -220,7 +220,7 @@ export default function ProductFormModal({
                                 setIsSubDropdownOpen(false)
                                 await onDeleteSubCategory(form.category, sub)
                               }}
-                              className="size-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+                              className="size-7 flex items-center justify-center rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors flex-shrink-0"
                               title={`Xóa nhóm phụ "${sub}"`}
                             >
                               <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
