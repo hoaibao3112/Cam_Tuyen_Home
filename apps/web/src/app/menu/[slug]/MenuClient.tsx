@@ -10,6 +10,22 @@ export interface CartItem extends MenuItem {
   quantity: number
 }
 
+// Badge label cho từng category (map theo tên category từ backend)
+const CATEGORY_BADGE: Record<string, string> = {
+  'Rau Củ Quả Đà Lạt': 'Organic',
+  'Hoa Tươi': 'VietGAP',
+  'Trái Cây Nhập Khẩu': 'Nhập Khẩu',
+  'Bánh Kẹo & Hạt Organic': 'Đặc Sản',
+  'Đồ Sấy & Đặc Sản Đà Lạt': 'Đặc Sản',
+}
+
+const BADGE_COLOR: Record<string, string> = {
+  'Organic': 'bg-emerald-600',
+  'VietGAP': 'bg-blue-600',
+  'Nhập Khẩu': 'bg-amber-600',
+  'Đặc Sản': 'bg-rose-600',
+}
+
 export default function MenuClient({
   items: initialItems,
   slug,
@@ -19,20 +35,16 @@ export default function MenuClient({
 }) {
   const supabase = createClient()
 
-  // State cục bộ — khởi tạo từ SSR props, cập nhật qua Realtime / polling
   const [items, setItems] = useState<MenuItem[]>(initialItems)
   const [cart, setCart] = useState<CartItem[]>([])
-  const [activeCategory, setActiveCategory] = useState<string>('Món ăn healthy')
+  const [activeCategory, setActiveCategory] = useState<string>('')
   const [activeSubCategory, setActiveSubCategory] = useState<string>('all')
   const [showOrderPanel, setShowOrderPanel] = useState(false)
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
 
-  // Ref cho debounce timer
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Ref cho fallback polling
   const pollingTimer = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Hàm tải lại danh sách món từ API (dùng chung cho Realtime + polling)
   const refetchItems = useCallback(async () => {
     try {
       const res = await fetch(`/api/menu/${slug}`)
@@ -44,41 +56,18 @@ export default function MenuClient({
     }
   }, [slug])
 
-  // Debounce refetch để gom nhiều event Realtime liên tiếp thành 1 lần gọi
   const scheduleRefetch = useCallback(() => {
     if (refetchTimer.current) clearTimeout(refetchTimer.current)
-    refetchTimer.current = setTimeout(() => {
-      refetchItems()
-    }, 400) // debounce 400ms
+    refetchTimer.current = setTimeout(() => refetchItems(), 400)
   }, [refetchItems])
 
   useEffect(() => {
-    // Subscribe Realtime cho cả menu_items và categories
     const channel = supabase
       .channel(`menu-realtime-${slug}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'menu_items',
-          filter: `shop_slug=eq.${slug}`,
-        },
-        () => scheduleRefetch(),
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'categories',
-          filter: `shop_slug=eq.${slug}`,
-        },
-        () => scheduleRefetch(),
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items', filter: `shop_slug=eq.${slug}` }, () => scheduleRefetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `shop_slug=eq.${slug}` }, () => scheduleRefetch())
       .subscribe()
 
-    // Fallback polling 60s — bù khi event UPDATE bị RLS chặn (is_active false)
     pollingTimer.current = setInterval(refetchItems, 60_000)
 
     return () => {
@@ -88,12 +77,11 @@ export default function MenuClient({
     }
   }, [slug, scheduleRefetch, refetchItems])
 
-  // Sắp xếp categories theo sort_order của item đầu tiên trong nhóm
-  // (đại diện cho sort_order của category được gán từ bảng categories)
+  // Categories theo thứ tự xuất hiện trong data
   const categories = useMemo(() => {
     const seen = new Set<string>()
     const ordered: string[] = []
-    items.forEach(item => {
+    items.forEach((item) => {
       if (!seen.has(item.category)) {
         seen.add(item.category)
         ordered.push(item.category)
@@ -102,47 +90,41 @@ export default function MenuClient({
     return ordered
   }, [items])
 
-  // Chỉ hiện subcategory filter khi đang ở nhóm "Đồ ăn vặt"
+  // Set default category khi load xong
+  useEffect(() => {
+    if (categories.length > 0 && !activeCategory) {
+      setActiveCategory(categories[0])
+    }
+  }, [categories, activeCategory])
+
   const SUB_CATEGORY_ENABLED = 'Món ăn vặt'
 
   const subCategories = useMemo(() => {
-    if (activeCategory === 'all') return []
     if (activeCategory !== SUB_CATEGORY_ENABLED) return []
-    const itemsInCat = items.filter((i) => i.category === activeCategory)
-    const subs = itemsInCat
+    const subs = items
+      .filter((i) => i.category === activeCategory)
       .map((i) => i.sub_category?.trim())
       .filter((s): s is string => !!s)
-
-    // Normalize: Capitalize first letter to merge e.g., 'bánh tráng' and 'Bánh tráng'
-    const normalized = subs.map(
-      (s) => s.charAt(0).toUpperCase() + s.slice(1)
-    )
-    return Array.from(new Set(normalized)).sort((a, b) => a.localeCompare(b))
+      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    return Array.from(new Set(subs)).sort((a, b) => a.localeCompare(b))
   }, [items, activeCategory])
 
   const hasNullSubCategory = useMemo(() => {
-    if (activeCategory === 'all') return false
     if (activeCategory !== SUB_CATEGORY_ENABLED) return false
-    const itemsInCat = items.filter((i) => i.category === activeCategory)
-    return itemsInCat.some((i) => !i.sub_category)
+    return items.filter((i) => i.category === activeCategory).some((i) => !i.sub_category)
   }, [items, activeCategory])
 
   const filtered = useMemo(() => {
-    let result = items
-    if (activeCategory !== 'all') {
-      result = result.filter((i) => i.category === activeCategory)
-
-      if (activeSubCategory !== 'all') {
-        if (activeSubCategory === 'other') {
-          result = result.filter((i) => !i.sub_category)
-        } else {
-          result = result.filter((i) => {
-            const sub = i.sub_category?.trim()
-            if (!sub) return false
-            const normalizedSub = sub.charAt(0).toUpperCase() + sub.slice(1)
-            return normalizedSub === activeSubCategory
-          })
-        }
+    let result = items.filter((i) => activeCategory === '' || i.category === activeCategory)
+    if (activeSubCategory !== 'all' && activeCategory === SUB_CATEGORY_ENABLED) {
+      if (activeSubCategory === 'other') {
+        result = result.filter((i) => !i.sub_category)
+      } else {
+        result = result.filter((i) => {
+          const s = i.sub_category?.trim()
+          if (!s) return false
+          return (s.charAt(0).toUpperCase() + s.slice(1)) === activeSubCategory
+        })
       }
     }
     return result
@@ -154,11 +136,7 @@ export default function MenuClient({
   function addToCart(item: MenuItem) {
     setCart((prev) => {
       const exists = prev.find((c) => c.id === item.id)
-      if (exists) {
-        return prev.map((c) =>
-          c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c
-        )
-      }
+      if (exists) return prev.map((c) => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c)
       return [...prev, { ...item, quantity: 1 }]
     })
   }
@@ -168,9 +146,7 @@ export default function MenuClient({
       const exists = prev.find((c) => c.id === id)
       if (!exists) return prev
       if (exists.quantity === 1) return prev.filter((c) => c.id !== id)
-      return prev.map((c) =>
-        c.id === id ? { ...c, quantity: c.quantity - 1 } : c
-      )
+      return prev.map((c) => c.id === id ? { ...c, quantity: c.quantity - 1 } : c)
     })
   }
 
@@ -179,171 +155,210 @@ export default function MenuClient({
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#FAFAFA] text-slate-800 flex flex-col">
-      {/* Desktop: 2 cột | Mobile: 1 cột */}
-      <div className="flex flex-col lg:flex-row flex-1 min-h-screen min-h-[100dvh]">
+    <div className="min-h-screen bg-[#FAFAF7] text-slate-800 flex flex-col">
 
-        {/* ===== CỘT TRÁI: MENU ===== */}
-        <div className="flex-1 lg:max-w-[65%] flex flex-col">
+      {/* ===== HEADER ===== */}
+      <header className="bg-white border-b border-[#E8E0D0] shadow-sm sticky top-0 z-30">
+        {/* Top bar: logo + icons */}
+        <div className="flex items-center justify-between px-4 sm:px-8 py-3">
+          {/* Search icon */}
+          <button className="p-2 text-[#4A3728] hover:text-[#2D5A27] transition-colors" aria-label="Tìm kiếm">
+            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
 
-          {/* Header */}
-          <div className="flex flex-col items-center justify-center py-5 px-4 border-b border-[#F3F4F6] bg-white text-slate-800 shadow-sm">
-            <div className="relative flex flex-col items-center">
-              <span className="text-[10px] font-extrabold tracking-[0.25em] uppercase text-[#F97316] mb-1.5 select-none">
-                Link Menu
-              </span>
-              <div className="relative h-10 md:h-12 w-40 md:w-48 select-none flex items-center justify-center">
-                <Image
-                  src="/images/logo.png"
-                  alt="Ý Nù Quán"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
+          {/* Logo + Brand */}
+          <div className="flex flex-col items-center">
+            <div className="relative w-14 h-14 sm:w-16 sm:h-16">
+              <Image
+                src="/logooo11.png"
+                alt="Cẩm Tuyền House's"
+                fill
+                className="object-contain"
+                priority
+              />
             </div>
-            <p className="text-[#F97316] text-[10px] md:text-xs font-bold tracking-wider uppercase mt-2">
-              Món ăn healthy - món ăn vặt - nước uống
-            </p>
+            <div className="text-center mt-0.5">
+              <p className="font-bold text-[#2D5A27] text-base sm:text-lg leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
+                Cẩm Tuyền House&apos;s
+              </p>
+              <p className="text-[#8B7355] text-[10px] tracking-widest font-medium">SINCE 2021</p>
+            </div>
           </div>
 
-          {/* Group sticky bộ lọc */}
-          <div className="sticky top-0 z-20 bg-white shadow-xs">
-            {/* Tab categories (Pill style - Fixed buttons across viewport on mobile) */}
-            <div className="flex justify-between gap-1.5 sm:gap-2.5 px-2 sm:px-4 py-3 bg-white border-b border-[#F3F4F6]">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setActiveCategory(cat)
-                    setActiveSubCategory('all')
-                  }}
-                  className={`flex-1 text-center py-1.5 sm:py-2 px-0.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-300 ${activeCategory === cat
-                      ? 'bg-[#1D4ED8] text-white shadow-xs'
-                      : 'bg-white text-[#6B7280] border border-[#F3F4F6] hover:bg-slate-50'
-                    }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+          {/* Cart icon + User icon */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowOrderPanel(true)}
+              className="relative p-2 text-[#4A3728] hover:text-[#2D5A27] transition-colors"
+              aria-label="Giỏ hàng"
+            >
+              <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              {totalQty > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-[#2D5A27] text-white text-[9px] font-black size-4 rounded-full flex items-center justify-center">
+                  {totalQty}
+                </span>
+              )}
+            </button>
+            <button className="p-2 text-[#4A3728] hover:text-[#2D5A27] transition-colors" aria-label="Tài khoản">
+              <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </button>
+          </div>
+        </div>
 
-            {/* Tab subcategories (Scrollable horizontally on mobile, subtle layout) */}
-            {subCategories.length > 0 && (
-              <div className="flex items-center gap-2 overflow-x-auto scrollbar-none px-3 py-2.5 bg-slate-50/80 backdrop-blur-xs border-b border-[#F3F4F6] transition-all duration-300">
-                <button
-                  onClick={() => setActiveSubCategory('all')}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-200 ${activeSubCategory === 'all'
-                      ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] shadow-xs'
-                      : 'bg-white text-[#6B7280] border border-[#E5E7EB]/50 hover:bg-slate-50'
-                    }`}
-                >
-                  Tất cả
-                </button>
-                {subCategories.map((sub) => (
-                  <button
-                    key={sub}
-                    onClick={() => setActiveSubCategory(sub)}
-                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-200 ${activeSubCategory === sub
-                        ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] shadow-xs'
-                        : 'bg-white text-[#6B7280] border border-[#E5E7EB]/50 hover:bg-slate-50'
-                      }`}
-                  >
-                    {sub}
-                  </button>
-                ))}
-                {hasNullSubCategory && (
-                  <button
-                    onClick={() => setActiveSubCategory('other')}
-                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-extrabold transition-all duration-200 ${activeSubCategory === 'other'
-                        ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] shadow-xs'
-                        : 'bg-white text-[#6B7280] border border-[#E5E7EB]/50 hover:bg-slate-50'
-                      }`}
-                  >
-                    Món khác
-                  </button>
-                )}
-              </div>
+        {/* Nav categories */}
+        <nav className="flex items-center gap-0 overflow-x-auto scrollbar-none px-4 sm:px-8 border-t border-[#E8E0D0]">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => {
+                setActiveCategory(cat)
+                setActiveSubCategory('all')
+              }}
+              className={`shrink-0 px-3 sm:px-5 py-3 text-[11px] sm:text-sm font-bold transition-all duration-200 border-b-2 whitespace-nowrap ${
+                activeCategory === cat
+                  ? 'border-[#2D5A27] text-[#2D5A27]'
+                  : 'border-transparent text-[#6B5E4E] hover:text-[#2D5A27] hover:border-[#2D5A27]/30'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </nav>
+
+        {/* SubCategory bar */}
+        {subCategories.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none px-4 sm:px-8 py-2.5 bg-[#F5F0E8] border-t border-[#E8E0D0]">
+            <button
+              onClick={() => setActiveSubCategory('all')}
+              className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all ${
+                activeSubCategory === 'all'
+                  ? 'bg-[#2D5A27] text-white'
+                  : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0]'
+              }`}
+            >
+              Tất cả
+            </button>
+            {subCategories.map((sub) => (
+              <button
+                key={sub}
+                onClick={() => setActiveSubCategory(sub)}
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all ${
+                  activeSubCategory === sub
+                    ? 'bg-[#2D5A27] text-white'
+                    : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0]'
+                }`}
+              >
+                {sub}
+              </button>
+            ))}
+            {hasNullSubCategory && (
+              <button
+                onClick={() => setActiveSubCategory('other')}
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all ${
+                  activeSubCategory === 'other'
+                    ? 'bg-[#2D5A27] text-white'
+                    : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0]'
+                }`}
+              >
+                Món khác
+              </button>
             )}
           </div>
+        )}
+      </header>
 
-          {/* Grid món ăn (Cố định 4 cột trên mobile, 3 cột trên desktop) */}
-          <div className="flex-1 overflow-y-auto p-1.5 sm:p-6 bg-[#FAFAFA]">
-            <div className="grid grid-cols-4 md:grid-cols-3 gap-1.5 sm:gap-6">
+      {/* ===== MAIN CONTENT ===== */}
+      <div className="flex flex-1 max-w-[1400px] w-full mx-auto">
+
+        {/* ===== CỘT TRÁI: PRODUCT GRID ===== */}
+        <main className="flex-1 lg:max-w-[calc(100%-380px)]">
+          {/* Category heading */}
+          {activeCategory && (
+            <div className="px-4 sm:px-8 pt-6 pb-4">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#2D1810]">{activeCategory}</h1>
+              {activeCategory === 'Rau Củ Quả Đà Lạt' && (
+                <p className="text-[#8B7355] text-sm mt-1">Hương vị thuần khiết từ cao nguyên, được chọn lọc kỹ lưỡng mỗi ngày cho bữa cơm gia đình trọn vẹn.</p>
+              )}
+            </div>
+          )}
+
+          {/* Product grid */}
+          <div className="px-3 sm:px-8 pb-10">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
               {filtered.map((item, index) => {
                 const qty = getQty(item.id)
+                const badge = CATEGORY_BADGE[item.category]
+                const badgeColor = badge ? (BADGE_COLOR[badge] ?? 'bg-[#2D5A27]') : null
+
                 return (
                   <div
                     key={item.id}
                     onClick={() => setSelectedItem(item)}
-                    className="bg-white rounded-lg sm:rounded-[16px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-[#F3F4F6] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 flex flex-col group p-1.5 sm:p-3 cursor-pointer"
+                    className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-[#EDE8E0] hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-300 flex flex-col cursor-pointer group"
                   >
-                    {/* Ảnh món (Bo góc, 4/3 aspect ratio) */}
-                    <div className="relative aspect-[4/3] w-full rounded-md sm:rounded-[12px] overflow-hidden bg-[#FAFAFA] shadow-xs">
+                    {/* Image */}
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#F5F0E8]">
                       {item.image_url ? (
                         <Image
                           src={item.image_url}
                           alt={item.name}
                           fill
-                          sizes="(max-width: 640px) 25vw, (max-width: 1024px) 33vw, 20vw"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                           priority={index < 8}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xl select-none bg-[#FAFAFA]">
-                          🥗
+                        <div className="w-full h-full flex items-center justify-center text-3xl bg-[#F5F0E8] select-none">
+                          🌿
                         </div>
+                      )}
+                      {/* Badge */}
+                      {badge && badgeColor && (
+                        <span className={`absolute top-2 right-2 ${badgeColor} text-white text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full`}>
+                          {badge}
+                        </span>
                       )}
                     </div>
 
-                    {/* Thông tin */}
-                    <div className="mt-1.5 sm:mt-3 flex flex-col flex-1">
-                      {/* Tên món - font đậm, màu #111827, tối đa 2 dòng */}
-                      <p className="text-[#111827] font-bold text-[9px] sm:text-sm leading-tight line-clamp-2 min-h-[1.5rem] sm:min-h-[2.5rem] flex-1">
+                    {/* Info */}
+                    <div className="p-2.5 sm:p-4 flex flex-col flex-1">
+                      <p className="text-[11px] sm:text-[12px] text-[#8B7355] font-medium leading-tight mb-0.5">
+                        {item.category}
+                      </p>
+                      <p className="text-[#2D1810] font-bold text-sm sm:text-[15px] leading-snug line-clamp-2 flex-1 min-h-[2.5rem]">
                         {item.name}
                       </p>
-
-                      {item.description && (
-                        <p className="hidden sm:block text-[#6B7280] text-xs mt-1.5 line-clamp-2 leading-relaxed">
-                          {item.description}
-                        </p>
-                      )}
-
-                      {/* Giá tiền - màu cam #F97316, font đậm */}
-                      <p className="text-[#F97316] font-extrabold text-[10px] sm:text-base mt-1 sm:mt-2">
+                      <p className="text-[#2D5A27] font-extrabold text-sm sm:text-base mt-1.5">
                         {item.price.toLocaleString('vi-VN')}đ
                       </p>
 
-                      {/* Nút đặt món (Chiều cao 28px trên mobile, 40px trên desktop) */}
-                      <div className="mt-1.5 sm:mt-3" onClick={(e) => e.stopPropagation()}>
+                      {/* Button */}
+                      <div className="mt-2.5" onClick={(e) => e.stopPropagation()}>
                         {qty === 0 ? (
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              addToCart(item)
-                            }}
-                            className="w-full h-[26px] sm:h-[40px] bg-[#1D4ED8] hover:bg-[#1e40af] text-white text-[9px] sm:text-xs font-bold rounded-md sm:rounded-[12px] active:scale-[0.95] transition-all cursor-pointer flex items-center justify-center shadow-xs"
+                            onClick={(e) => { e.stopPropagation(); addToCart(item) }}
+                            className="w-full h-8 sm:h-9 bg-[#2D5A27] hover:bg-[#1E3D1A] text-white text-[11px] sm:text-xs font-bold rounded-xl active:scale-[0.95] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
                           >
-                            + Chọn
+                            <span className="text-sm">+</span> Chọn
                           </button>
                         ) : (
-                          <div className="flex items-center justify-between bg-slate-50 border border-slate-200/80 rounded-md sm:rounded-[12px] overflow-hidden h-[26px] sm:h-[40px]">
+                          <div className="flex items-center justify-between bg-[#F0EAE0] border border-[#D4C4A8] rounded-xl overflow-hidden h-8 sm:h-9">
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                removeFromCart(item.id)
-                              }}
-                              className="w-5 sm:w-10 h-full text-slate-650 hover:text-[#1D4ED8] font-bold hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center text-[9px] sm:text-base"
+                              onClick={(e) => { e.stopPropagation(); removeFromCart(item.id) }}
+                              className="w-8 sm:w-10 h-full text-[#2D5A27] font-bold hover:bg-[#E8DDD0] transition-colors cursor-pointer flex items-center justify-center text-base"
                             >
                               −
                             </button>
-                            <span className="text-[#111827] font-extrabold text-[9px] sm:text-xs">{qty}</span>
+                            <span className="text-[#2D1810] font-extrabold text-xs sm:text-sm">{qty}</span>
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                addToCart(item)
-                              }}
-                              className="w-5 sm:w-10 h-full text-slate-650 hover:text-[#1D4ED8] font-bold hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center text-[9px] sm:text-base"
+                              onClick={(e) => { e.stopPropagation(); addToCart(item) }}
+                              className="w-8 sm:w-10 h-full text-[#2D5A27] font-bold hover:bg-[#E8DDD0] transition-colors cursor-pointer flex items-center justify-center text-base"
                             >
                               +
                             </button>
@@ -354,49 +369,20 @@ export default function MenuClient({
                   </div>
                 )
               })}
+
+              {/* Empty product placeholder (giống design gốc) */}
+              {filtered.length % 2 !== 0 && (
+                <div className="hidden sm:flex bg-white/60 rounded-2xl border border-dashed border-[#D4C4A8] items-center justify-center aspect-[3/4] sm:aspect-auto sm:min-h-[280px] flex-col gap-2 text-[#B0A090]">
+                  <span className="text-2xl">🌿</span>
+                  <p className="text-xs font-medium text-center px-3">Đang cập nhật thêm sản phẩm tươi mới...</p>
+                </div>
+              )}
             </div>
           </div>
+        </main>
 
-
-          {/* Mobile: Thanh giỏ hàng cố định phía dưới (Sticky bottom bar, nền cam, bo góc lớn, đổ bóng trên) */}
-          {totalQty > 0 && (
-            <div className="lg:hidden sticky bottom-0 p-3 bg-[#FAFAFA]/90 backdrop-blur-md border-t border-[#F3F4F6] z-40">
-              <div className="h-16 bg-[#F97316] text-white rounded-[20px] flex items-center justify-between px-5 shadow-[0_-4px_20px_rgba(0,0,0,0.12)]">
-                <div className="flex items-center gap-2.5">
-                  <div className="relative">
-                    <svg className="size-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <span className="absolute -top-1.5 -right-1.5 bg-[#1D4ED8] text-white text-[9px] font-black size-4.5 rounded-full flex items-center justify-center border border-white">
-                      {totalQty}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-orange-100/90 font-bold uppercase tracking-wider leading-none mb-0.5">Giỏ hàng</span>
-                    <span className="text-xs font-bold leading-none">{totalQty} món</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setShowOrderPanel(true)}
-                  className="bg-white text-[#F97316] hover:bg-orange-50/90 px-4 py-2 rounded-[12px] font-black text-xs transition-all duration-300 shadow-sm active:scale-[0.96] cursor-pointer"
-                >
-                  Xem đơn hàng
-                </button>
-
-                <div className="text-right">
-                  <span className="text-[10px] text-orange-100/90 font-bold uppercase tracking-wider block leading-none mb-0.5">Tổng cộng</span>
-                  <span className="text-sm font-black text-white">
-                    {totalPrice.toLocaleString('vi-VN')}đ
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ===== CỘT PHẢI: FORM ĐẶT HÀNG (Desktop) ===== */}
-        <div className="hidden lg:flex lg:w-[35%] border-l border-[#F3F4F6] bg-white flex-col sticky top-0 h-screen">
+        {/* ===== CỘT PHẢI: ORDER PANEL (Desktop only) ===== */}
+        <aside className="hidden lg:flex lg:w-[380px] border-l border-[#E8E0D0] bg-white flex-col sticky top-[var(--header-height,140px)] h-[calc(100vh-140px)] self-start">
           <OrderPanel
             cart={cart}
             slug={slug}
@@ -404,22 +390,100 @@ export default function MenuClient({
             onRemove={removeFromCart}
             onClear={() => setCart([])}
           />
-        </div>
+        </aside>
       </div>
 
-      {/* Mobile: Order Panel dạng bottom sheet */}
+      {/* ===== FOOTER ===== */}
+      <footer className="bg-[#2D1810] text-white mt-auto">
+        <div className="max-w-[1400px] mx-auto px-6 sm:px-12 py-10 grid grid-cols-1 sm:grid-cols-3 gap-8">
+          {/* Brand */}
+          <div>
+            <p className="font-bold text-xl mb-2" style={{ fontFamily: 'Georgia, serif' }}>Cẩm Tuyền House&apos;s</p>
+            <p className="text-[#C4A882] text-sm leading-relaxed">
+              Chúng tôi tin rằng thực phẩm không chỉ để ăn mà còn để nuôi dưỡng tâm hồn và gắn kết yêu thương. Mỗi sản phẩm tại Cẩm Tuyền đều chứa đựng sự tận tâm từ người nông dân.
+            </p>
+            <div className="flex items-center gap-4 mt-4 text-[#C4A882] text-sm">
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors flex items-center gap-1.5">
+                <svg className="size-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                </svg>
+                Facebook: Nguyễn Thị Cẩm Tuyền
+              </a>
+            </div>
+            <p className="text-[#C4A882] text-sm mt-2 flex items-center gap-1.5">
+              <svg className="size-4 fill-current shrink-0" viewBox="0 0 24 24">
+                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+              </svg>
+              037.502.3839
+            </p>
+          </div>
+
+          {/* Khám phá */}
+          <div>
+            <p className="font-bold text-sm uppercase tracking-widest text-[#C4A882] mb-4">Khám Phá</p>
+            <ul className="space-y-2.5 text-sm text-[#C4A882]">
+              <li><a href="#" className="hover:text-white transition-colors">Về chúng tôi</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Chính sách giao hàng</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Hợp tác nông trại</a></li>
+            </ul>
+          </div>
+
+          {/* Liên hệ */}
+          <div>
+            <p className="font-bold text-sm uppercase tracking-widest text-[#C4A882] mb-4">Liên Hệ</p>
+            <ul className="space-y-2.5 text-sm text-[#C4A882]">
+              <li>Địa chỉ: Thành phố Đà Lạt, Lâm Đồng</li>
+              <li>Giờ mở cửa: 07:00 – 21:00</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="border-t border-[#4A2D20] py-4 text-center text-[#8B6B55] text-xs">
+          © 2024 Cẩm Tuyền House&apos;s. Chính Tươi – Sống Khoẻ – Yêu Thương.
+        </div>
+      </footer>
+
+      {/* ===== MOBILE: Sticky bottom bar ===== */}
+      {totalQty > 0 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-[#FAFAF7]/90 backdrop-blur-md border-t border-[#E8E0D0] z-40">
+          <div className="h-14 bg-[#2D5A27] text-white rounded-2xl flex items-center justify-between px-4 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]">
+            <div className="flex items-center gap-2.5">
+              <div className="relative">
+                <svg className="size-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span className="absolute -top-1.5 -right-1.5 bg-[#C4A882] text-[#2D1810] text-[9px] font-black size-4 rounded-full flex items-center justify-center">
+                  {totalQty}
+                </span>
+              </div>
+              <span className="text-xs font-bold">{totalQty} sản phẩm</span>
+            </div>
+
+            <button
+              onClick={() => setShowOrderPanel(true)}
+              className="bg-white text-[#2D5A27] hover:bg-[#F0EAE0] px-4 py-1.5 rounded-xl font-bold text-xs transition-all duration-300 active:scale-[0.96] cursor-pointer"
+            >
+              Xem đơn hàng
+            </button>
+
+            <span className="text-sm font-black">
+              {totalPrice.toLocaleString('vi-VN')}đ
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ===== MOBILE: Order panel bottom sheet ===== */}
       {showOrderPanel && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex flex-col justify-end">
-          <div className="bg-white rounded-t-[2.5rem] max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="lg:hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex flex-col justify-end">
+          <div className="bg-white rounded-t-[2rem] max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
             <div className="flex-1 overflow-y-auto">
               <OrderPanel
                 cart={cart}
                 slug={slug}
                 onAdd={addToCart}
                 onRemove={removeFromCart}
-                onClear={() => {
-                  setCart([])
-                }}
+                onClear={() => setCart([])}
                 onClose={() => setShowOrderPanel(false)}
               />
             </div>
@@ -427,20 +491,18 @@ export default function MenuClient({
         </div>
       )}
 
-      {/* Chi tiết sản phẩm Modal / Bottom Sheet */}
+      {/* ===== PRODUCT DETAIL MODAL ===== */}
       {selectedItem && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-xs p-0 sm:p-4 transition-opacity duration-300"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4"
           onClick={() => setSelectedItem(null)}
         >
           <div
             className="w-full sm:max-w-[480px] bg-white rounded-t-[2rem] sm:rounded-2xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Thanh kéo nhỏ chỉ hiện trên mobile */}
-            <div className="mx-auto my-3 w-12 h-1 rounded-full bg-slate-200 sm:hidden shrink-0" />
+            <div className="mx-auto my-3 w-12 h-1 rounded-full bg-[#D4C4A8] sm:hidden shrink-0" />
 
-            {/* Nút đóng */}
             <button
               onClick={() => setSelectedItem(null)}
               className="absolute top-4 right-4 z-10 size-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-colors cursor-pointer"
@@ -451,10 +513,8 @@ export default function MenuClient({
               </svg>
             </button>
 
-            {/* Cuộn nội dung */}
             <div className="flex-1 overflow-y-auto pb-6">
-              {/* Hình ảnh */}
-              <div className="relative w-full aspect-[4/3] max-h-[360px] bg-slate-50 flex justify-center items-center overflow-hidden shrink-0">
+              <div className="relative w-full aspect-[4/3] max-h-[360px] bg-[#F5F0E8] overflow-hidden shrink-0">
                 {selectedItem.image_url ? (
                   <Image
                     src={selectedItem.image_url}
@@ -465,74 +525,66 @@ export default function MenuClient({
                     priority
                   />
                 ) : (
-                  <div className="aspect-video w-full flex items-center justify-center text-5xl bg-slate-100 select-none">
-                    🥗
-                  </div>
+                  <div className="w-full h-full flex items-center justify-center text-5xl select-none">🌿</div>
                 )}
               </div>
 
-              {/* Thông tin */}
               <div className="px-5 sm:px-6 mt-4 flex flex-col">
-                <span className="self-start px-2.5 py-1 bg-blue-50 text-[#1D4ED8] text-[10px] sm:text-xs font-extrabold rounded-full uppercase tracking-wider">
+                <span className="self-start px-2.5 py-1 bg-[#F0EAE0] text-[#2D5A27] text-[10px] sm:text-xs font-bold rounded-full uppercase tracking-wider">
                   {selectedItem.category}
                 </span>
-
-                <h3 className="text-lg sm:text-2xl font-extrabold text-[#111827] mt-2.5 leading-tight">
+                <h3 className="text-lg sm:text-2xl font-extrabold text-[#2D1810] mt-2.5 leading-tight">
                   {selectedItem.name}
                 </h3>
-
-                <p className="text-[#F97316] font-extrabold text-lg sm:text-2xl mt-2">
+                <p className="text-[#2D5A27] font-extrabold text-lg sm:text-2xl mt-2">
                   {selectedItem.price.toLocaleString('vi-VN')}đ
                 </p>
-
-                <div className="mt-4 sm:mt-5 border-t border-slate-100 pt-4">
-                  <h4 className="text-[10px] sm:text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">
-                    Chi tiết món ăn
+                <div className="mt-4 sm:mt-5 border-t border-[#EDE8E0] pt-4">
+                  <h4 className="text-[10px] sm:text-xs font-extrabold text-[#8B7355] uppercase tracking-widest mb-1.5">
+                    Chi tiết sản phẩm
                   </h4>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line">
-                    {selectedItem.description ||
-                      'Món ăn healthy thơm ngon, giàu dinh dưỡng, được chế biến từ nguyên liệu tươi sạch, đảm bảo vệ sinh an toàn thực phẩm.'}
+                  <p className="text-xs sm:text-sm text-[#6B5E4E] leading-relaxed whitespace-pre-line">
+                    {selectedItem.description || 'Sản phẩm tươi ngon, chất lượng cao, được tuyển chọn kỹ lưỡng từ các nông trại uy tín.'}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Bottom action bar */}
-            <div className="p-4 sm:p-5 border-t border-slate-100 bg-white shrink-0">
+            <div className="p-4 sm:p-5 border-t border-[#EDE8E0] bg-white shrink-0">
               {getQty(selectedItem.id) === 0 ? (
                 <button
                   onClick={() => addToCart(selectedItem)}
-                  className="w-full h-12 bg-[#1D4ED8] hover:bg-[#1e40af] text-white text-sm font-bold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  className="w-full h-12 bg-[#2D5A27] hover:bg-[#1E3D1A] text-white text-sm font-bold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
                 >
                   <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Thêm vào đơn - {selectedItem.price.toLocaleString('vi-VN')}đ
+                  Thêm vào đơn · {selectedItem.price.toLocaleString('vi-VN')}đ
                 </button>
               ) : (
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl overflow-hidden h-12 px-1">
+                  <div className="flex items-center bg-[#F0EAE0] border border-[#D4C4A8] rounded-xl overflow-hidden h-12 px-1">
                     <button
                       onClick={() => removeFromCart(selectedItem.id)}
-                      className="w-10 h-full text-slate-600 hover:text-[#1D4ED8] font-bold hover:bg-slate-100 rounded-lg transition-colors cursor-pointer flex items-center justify-center text-lg"
+                      className="w-10 h-full text-[#2D5A27] font-bold hover:bg-[#E8DDD0] rounded-lg transition-colors cursor-pointer flex items-center justify-center text-lg"
                     >
                       −
                     </button>
-                    <span className="text-[#111827] font-black text-sm px-4 select-none min-w-[2rem] text-center">
+                    <span className="text-[#2D1810] font-black text-sm px-4 select-none min-w-[2rem] text-center">
                       {getQty(selectedItem.id)}
                     </span>
                     <button
                       onClick={() => addToCart(selectedItem)}
-                      className="w-10 h-full text-slate-600 hover:text-[#1D4ED8] font-bold hover:bg-slate-100 rounded-lg transition-colors cursor-pointer flex items-center justify-center text-lg"
+                      className="w-10 h-full text-[#2D5A27] font-bold hover:bg-[#E8DDD0] rounded-lg transition-colors cursor-pointer flex items-center justify-center text-lg"
                     >
                       +
                     </button>
                   </div>
                   <button
                     onClick={() => setSelectedItem(null)}
-                    className="flex-1 h-12 bg-[#F97316] hover:bg-orange-600 text-white text-sm font-bold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer shadow-md"
+                    className="flex-1 h-12 bg-[#C4A882] hover:bg-[#B8956E] text-[#2D1810] text-sm font-bold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer shadow-md"
                   >
-                    Đã chọn {getQty(selectedItem.id)} món - Xem giỏ
+                    Đã chọn {getQty(selectedItem.id)} · Xem giỏ
                   </button>
                 </div>
               )}
@@ -540,21 +592,6 @@ export default function MenuClient({
           </div>
         </div>
       )}
-      {/* Nút Facebook nổi ở góc phải dưới */}
-      <a
-        href="https://www.facebook.com/profile.php?id=61587297699068"
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`fixed ${totalQty > 0 ? 'bottom-24 lg:bottom-6' : 'bottom-6'
-          } right-6 z-50 bg-[#1877F2] hover:bg-[#166FE5] text-white p-3 rounded-full shadow-[0_4px_16px_rgba(24,119,242,0.4)] hover:shadow-[0_6px_20px_rgba(24,119,242,0.6)] hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center size-12 sm:size-14`}
-        aria-label="Facebook Page"
-      >
-        <svg className="size-6 sm:size-7 fill-current" viewBox="0 0 24 24">
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-        </svg>
-      </a>
     </div>
   )
 }
-
-
