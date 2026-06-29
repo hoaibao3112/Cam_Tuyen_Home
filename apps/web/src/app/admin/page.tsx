@@ -9,6 +9,7 @@ import ProductTable from './components/ProductTable'
 import ProductFormModal from './components/ProductFormModal'
 import CategoryManager from './components/CategoryManager'
 import ProductReorderPanel from './components/ProductReorderPanel'
+import OverviewTab from './components/OverviewTab'
 
 type MenuItem = {
   id: string
@@ -69,7 +70,7 @@ export default function AdminPage() {
   const [editId, setEditId] = useState<string | null>(null)
 
   // State điều hướng tab
-  const [activeTab, setActiveTab] = useState<'products' | 'reorder'>('products')
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'reorder'>('overview')
   // Category được chọn trong view Sắp xếp menu
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
@@ -635,7 +636,11 @@ export default function AdminPage() {
 
         {/* Main Content Area */}
         <main className="p-4 sm:p-8 flex-1 flex flex-col min-h-0">
-          {activeTab === 'products' ? (
+          {activeTab === 'overview' && configLoaded && shopSlug && (
+            <OverviewTab shopSlug={shopSlug} />
+          )}
+
+          {activeTab === 'products' && (
             <>
               {/* Label hiển thị tổng số sản phẩm cho Mobile */}
               <div className="flex justify-between items-center mb-3 sm:hidden px-1">
@@ -659,7 +664,9 @@ export default function AdminPage() {
                 onDelete={handleDelete}
               />
             </>
-          ) : (
+          )}
+
+          {activeTab === 'reorder' && (
             /* View Sắp xếp menu: CategoryManager bên trái, ProductReorderPanel bên phải (Mobile drill-down, Desktop side-by-side) */
             <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0">
               {/* Cột trái: Quản lý danh mục */}

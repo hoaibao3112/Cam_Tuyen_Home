@@ -4,8 +4,8 @@ interface SidebarProps {
   isSidebarOpen: boolean
   setIsSidebarOpen: (open: boolean) => void
   onLogout: () => void
-  activeTab: 'products' | 'reorder'
-  setActiveTab: (tab: 'products' | 'reorder') => void
+  activeTab: 'overview' | 'products' | 'reorder'
+  setActiveTab: (tab: 'overview' | 'products' | 'reorder') => void
 }
 
 export default function Sidebar({
@@ -15,7 +15,7 @@ export default function Sidebar({
   activeTab,
   setActiveTab,
 }: SidebarProps) {
-  const handleNav = (tab: 'products' | 'reorder') => {
+  const handleNav = (tab: 'overview' | 'products' | 'reorder') => {
     setActiveTab(tab)
     setIsSidebarOpen(false)
   }
@@ -44,6 +44,22 @@ export default function Sidebar({
 
         {/* Navigation Menu */}
         <nav className="flex flex-col gap-2">
+          {/* Tab Thống kê tổng quan */}
+          <button
+            onClick={() => handleNav('overview')}
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 text-left w-full cursor-pointer ${
+              activeTab === 'overview'
+                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/10 hover:bg-sky-600'
+                : 'bg-white/60 text-slate-600 hover:bg-white/90 border border-slate-200'
+            }`}
+          >
+            {/* Chart icon */}
+            <svg className="size-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+            </svg>
+            <span>Báo cáo thống kê</span>
+          </button>
+
           {/* Tab Sản phẩm */}
           <button
             onClick={() => handleNav('products')}
