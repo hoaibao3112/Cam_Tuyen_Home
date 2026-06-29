@@ -168,7 +168,7 @@ export default function AdminPage() {
         setConfigLoaded(true)
       } catch (err) {
         console.error('Lỗi khi tải cấu hình:', err)
-        setShopSlug('quan-test')
+        setShopSlug('quan')
         setConfigLoaded(true)
       }
     }
