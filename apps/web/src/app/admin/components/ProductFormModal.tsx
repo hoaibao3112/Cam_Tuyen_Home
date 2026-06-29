@@ -167,7 +167,7 @@ export default function ProductFormModal({
           {/* Sub-Category Dropdown Selector */}
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
-              Nhóm phụ (Loại món)
+              Nhóm phụ (Loại sản phẩm)
             </label>
             {dynamicCategories.includes(form.category) ? (
               // Custom dropdown có nút xóa từng nhóm phụ

@@ -79,7 +79,7 @@ export class OrderService {
   async createOrder(dto: CreateOrderDto) {
     // 1. Validate items không rỗng
     if (!dto.items || dto.items.length === 0) {
-      throw new BadRequestException('Đơn hàng phải có ít nhất 1 món')
+      throw new BadRequestException('Đơn hàng phải có ít nhất 1 sản phẩm')
     }
 
     // 2. Validate giá tiền server-side — KHÔNG tin giá từ client
@@ -90,7 +90,7 @@ export class OrderService {
       .in('id', itemIds)
 
     if (menuError) {
-      throw new BadRequestException('Lỗi kiểm tra giá món ăn: ' + menuError.message)
+      throw new BadRequestException('Lỗi kiểm tra giá sản phẩm: ' + menuError.message)
     }
 
     const menuItemsMap = new Map<string, { price: number; is_active: boolean }>(
@@ -104,10 +104,10 @@ export class OrderService {
     for (const item of dto.items) {
       const dbItem = menuItemsMap.get(item.menu_item_id)
       if (!dbItem) {
-        throw new BadRequestException(`Món "${item.name}" không tồn tại hoặc đã bị xoá`)
+        throw new BadRequestException(`Sản phẩm "${item.name}" không tồn tại hoặc đã bị xoá`)
       }
       if (dbItem.is_active === false) {
-        throw new BadRequestException(`Món "${item.name}" hiện không còn phục vụ`)
+        throw new BadRequestException(`Sản phẩm "${item.name}" hiện không còn phục vụ`)
       }
     }
 
@@ -304,7 +304,7 @@ export class OrderService {
         `• Mã đơn hàng: ${order.order_code}\n` +
         `• Số điện thoại: ${order.customer_phone}\n` +
         `• Địa chỉ giao hàng: ${address}\n\n` +
-        `📋 CHI TIẾT MÓN ĂN:\n${itemsList}\n\n` +
+        `📋 CHI TIẾT SẢN PHẨM:\n${itemsList}\n\n` +
         `💰 TỔNG TIỀN: ${order.total_price.toLocaleString('vi-VN')}đ\n` +
         (note ? `📝 Ghi chú: ${note}` : '')
 
@@ -368,7 +368,7 @@ export class OrderService {
       `• Mã đơn hàng: ${order.order_code}\n` +
       `• Số điện thoại: ${order.customer_phone}\n` +
       `• Địa chỉ giao hàng: ${address}\n\n` +
-      `📋 CHI TIẾT MÓN ĂN:\n${itemsList}\n\n` +
+      `📋 CHI TIẾT SẢN PHẨM:\n${itemsList}\n\n` +
       `💰 TỔNG TIỀN: ${order.total_price.toLocaleString('vi-VN')}đ\n` +
       (note ? `📝 Ghi chú: ${note}` : '')
 

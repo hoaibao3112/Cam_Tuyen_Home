@@ -231,7 +231,7 @@ export default function CategoryManager({
   const handleDeleteCategory = async (id: string) => {
     const cat = categories.find(c => c.id === id)
     if (!cat) return
-    if (!confirm(`Xóa nhóm "${cat.name}"?\nChỉ xóa được nếu không còn món nào trong nhóm này.`)) return
+    if (!confirm(`Xóa nhóm "${cat.name}"?\nChỉ xóa được nếu không còn sản phẩm nào trong nhóm này.`)) return
 
     try {
       const res = await fetch(`/api/admin/categories/${id}`, { method: 'DELETE' })
@@ -398,7 +398,7 @@ export default function CategoryManager({
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Ví dụ: Món ăn healthy, Nước uống..."
+                placeholder="Ví dụ: Rau củ quả, Trái cây tươi..."
                 value={newCatName}
                 onChange={e => setNewCatName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAddCategory()}

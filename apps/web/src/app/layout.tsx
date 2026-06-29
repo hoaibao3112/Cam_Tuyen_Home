@@ -31,8 +31,8 @@ const lora = Lora({
 })
 
 export const metadata: Metadata = {
-  title: 'Menu đặt món',
-  description: 'Xem menu và đặt món online',
+  title: 'Cẩm Tuyền Home - Đặt hàng nông sản & trái cây',
+  description: 'Xem danh sách sản phẩm và đặt hàng nông sản, trái cây online',
 }
 
 export default function RootLayout({

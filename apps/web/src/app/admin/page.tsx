@@ -138,7 +138,7 @@ export default function AdminPage() {
       const data = await res.json()
       setItems(data || [])
     } catch (err) {
-      console.error('Lỗi khi tải danh sách món:', err)
+      console.error('Lỗi khi tải danh sách sản phẩm:', err)
     }
   }
 
@@ -247,10 +247,10 @@ export default function AdminPage() {
           body: JSON.stringify(payload),
         })
         if (res.ok) {
-          showMsg('Cập nhật món ăn thành công!')
+          showMsg('Cập nhật sản phẩm thành công!')
         } else {
           const errData = await res.json()
-          showMsg(errData.message || 'Lỗi khi cập nhật món!', 'error')
+          showMsg(errData.message || 'Lỗi khi cập nhật sản phẩm!', 'error')
         }
       } else {
         res = await fetch(`/api/admin/menu`, {
@@ -259,10 +259,10 @@ export default function AdminPage() {
           body: JSON.stringify(payload),
         })
         if (res.ok) {
-          showMsg('Thêm món mới thành công!')
+          showMsg('Thêm sản phẩm mới thành công!')
         } else {
           const errData = await res.json()
-          showMsg(errData.message || 'Lỗi khi thêm món mới!', 'error')
+          showMsg(errData.message || 'Lỗi khi thêm sản phẩm mới!', 'error')
         }
       }
 
@@ -357,25 +357,25 @@ export default function AdminPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa món này?')) return
+    if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return
 
     try {
       const res = await fetch(`/api/admin/menu/${id}`, { method: 'DELETE' })
       if (res.ok) {
-        showMsg('Đã xóa món ăn thành công!')
+        showMsg('Đã xóa sản phẩm thành công!')
         fetchItems(shopSlug)
       } else {
         const errData = await res.json()
-        showMsg(errData.message || 'Không thể xóa món ăn!', 'error')
+        showMsg(errData.message || 'Không thể xóa sản phẩm!', 'error')
       }
     } catch (err) {
-      showMsg('Lỗi kết nối khi xóa món!', 'error')
+      showMsg('Lỗi kết nối khi xóa sản phẩm!', 'error')
       console.error(err)
     }
   }
 
   const handleDeleteCategoryFromFilter = async (catName: string) => {
-    if (!confirm(`Xóa nhóm "${catName}"?\nChỉ xóa được nếu không còn món nào trong nhóm này.`)) return
+    if (!confirm(`Xóa nhóm "${catName}"?\nChỉ xóa được nếu không còn sản phẩm nào trong nhóm này.`)) return
     const cat = categoriesList.find(c => c.name === catName)
     if (!cat) return
     try {

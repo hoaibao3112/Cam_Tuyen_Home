@@ -231,7 +231,7 @@ export default function ProductTable({
       <div className="h-16 px-6 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-500 bg-white select-none">
         <div>
           {filteredItems.length > 0 ? (
-            <span>Hiển thị {startIndex} - {endIndex} của {filteredItems.length} món</span>
+            <span>Hiển thị {startIndex} - {endIndex} của {filteredItems.length} sản phẩm</span>
           ) : (
             <span>0 sản phẩm</span>
           )}

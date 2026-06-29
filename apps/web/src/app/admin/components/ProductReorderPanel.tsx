@@ -142,7 +142,7 @@ export default function ProductReorderPanel({
         .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
       setItems(filtered)
     } catch {
-      showToast('Không thể tải danh sách món ăn', 'error')
+      showToast('Không thể tải danh sách sản phẩm', 'error')
     } finally {
       setLoading(false)
     }
@@ -185,7 +185,7 @@ export default function ProductReorderPanel({
         throw new Error(err.message || 'Lỗi lưu thứ tự')
       }
 
-      showToast('Đã lưu thứ tự món ăn')
+      showToast('Đã lưu thứ tự sản phẩm')
     } catch (err: any) {
       // Rollback về trạng thái cũ
       setItems(prevItems)
@@ -199,7 +199,7 @@ export default function ProductReorderPanel({
         <div className="size-16 rounded-full bg-slate-50 flex items-center justify-center text-3xl">
           📂
         </div>
-        <p className="text-sm font-semibold text-slate-600">Chọn một danh mục để sắp xếp món</p>
+        <p className="text-sm font-semibold text-slate-600">Chọn một danh mục để sắp xếp sản phẩm</p>
       </div>
     )
   }
@@ -242,13 +242,13 @@ export default function ProductReorderPanel({
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0 pr-2">
-            <span className="text-lg flex-shrink-0">🍔</span>
+            <span className="text-lg flex-shrink-0">🍎</span>
             <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider truncate">
-              Món ăn: <span className="text-blue-600 normal-case font-bold">{categoryName}</span>
+              Danh mục: <span className="text-blue-600 normal-case font-bold">{categoryName}</span>
             </h3>
           </div>
           <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0">
-            {items.length} món
+            {items.length} sản phẩm
           </span>
         </div>
       </div>
@@ -257,12 +257,12 @@ export default function ProductReorderPanel({
         /* Empty State */
         <div className="flex flex-col items-center justify-center text-center p-6 py-12 flex-1 min-h-[300px] gap-4">
           <div className="size-20 rounded-full bg-slate-100 flex items-center justify-center text-4xl shadow-inner">
-            🍽️
+            🥦
           </div>
           <div className="flex flex-col gap-1.5">
-            <p className="text-sm font-bold text-slate-700">Danh mục này chưa có món nào</p>
+            <p className="text-sm font-bold text-slate-700">Danh mục này chưa có sản phẩm nào</p>
             <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
-              Quay lại tab Sản phẩm để thêm món vào danh mục này.
+              Quay lại tab Sản phẩm để thêm sản phẩm vào danh mục này.
             </p>
           </div>
         </div>

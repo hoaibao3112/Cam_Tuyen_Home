@@ -229,7 +229,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
               <span>🛒 Đơn hàng của bạn</span>
             </h2>
             {cart.length === 0 && (
-              <p className="text-slate-400 text-xs mt-1">Chưa có món nào được chọn</p>
+              <p className="text-slate-400 text-xs mt-1">Chưa có sản phẩm nào được chọn</p>
             )}
           </div>
           {onClose && (
@@ -246,12 +246,12 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
         <div className="flex-1 overflow-y-auto px-5 py-3 space-y-5">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[350px] text-slate-400">
-              <span className="text-5xl mb-3 select-none">🍽️</span>
-              <p className="text-sm font-medium">Chọn món từ menu bên cạnh</p>
+              <span className="text-5xl mb-3 select-none">🛒</span>
+              <p className="text-sm font-medium">Chọn sản phẩm từ danh sách bên cạnh</p>
             </div>
           ) : (
             <>
-              {/* Danh sách món đã chọn */}
+              {/* Danh sách sản phẩm đã chọn */}
               <div className="space-y-3">
                 {cart.map((item) => (
                   <div key={item.id} className="flex items-center gap-3 bg-blue-50/10 p-2 rounded-2xl border border-blue-100/10 hover:border-blue-100/40 transition-colors">
@@ -466,7 +466,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
         {cart.length > 0 && (
           <div className="px-5 py-4 border-t border-slate-100 bg-[#FAFAFA]/50 space-y-3 shrink-0">
             <div className="flex justify-between items-center text-xs font-extrabold">
-              <span className="text-slate-400 uppercase tracking-widest">{totalQty} món</span>
+              <span className="text-slate-400 uppercase tracking-widest">{totalQty} sản phẩm</span>
               <span className="text-rose-650 text-xl font-black">
                 {total.toLocaleString('vi-VN')}đ
               </span>
@@ -507,7 +507,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
         </p>
       </div>
       <p className="text-slate-500 text-xs leading-relaxed max-w-xs">
-        Bấm nút bên dưới để mở Messenger — nhà hàng sẽ liên hệ xác nhận đơn cho bạn.
+        Bấm nút bên dưới để mở Messenger — cửa hàng sẽ liên hệ xác nhận đơn cho bạn.
       </p>
       <a
         href={messengerUrl}
@@ -527,7 +527,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
         }}
         className="text-blue-650 text-xs font-bold underline hover:text-blue-700 transition-colors cursor-pointer"
       >
-        Đặt thêm món khác
+        Chọn thêm sản phẩm khác
       </button>
     </div>
   )

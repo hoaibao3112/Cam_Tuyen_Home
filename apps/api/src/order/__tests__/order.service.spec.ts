@@ -250,7 +250,7 @@ describe('OrderService — full flow', () => {
         db.in.mockResolvedValue({ data: [], error: null }) // DB trả về empty
 
         await expect(service.createOrder(validDto)).rejects.toThrow(
-          new BadRequestException(`Món "Com tam" không tồn tại hoặc đã bị xoá`),
+          new BadRequestException(`Sản phẩm "Com tam" không tồn tại hoặc đã bị xoá`),
         )
       })
 
@@ -261,7 +261,7 @@ describe('OrderService — full flow', () => {
         })
 
         await expect(service.createOrder(validDto)).rejects.toThrow(
-          new BadRequestException(`Món "Com tam" hiện không còn phục vụ`),
+          new BadRequestException(`Sản phẩm "Com tam" hiện không còn phục vụ`),
         )
       })
 
