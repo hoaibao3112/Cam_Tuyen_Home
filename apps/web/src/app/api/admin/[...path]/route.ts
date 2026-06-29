@@ -48,7 +48,7 @@ async function handleRequest(
   const targetUrl = `${apiUrl}/${pathSegments}${searchParams ? '?' + searchParams : ''}`
 
   // 3. Lấy API key từ env server-side (KHÔNG bao giờ ra client)
-  const adminApiKey = process.env.ADMIN_API_KEY || 'ynuquan_secret_api_key_2026'
+  const adminApiKey = process.env.ADMIN_API_KEY || 'camtuyen_secret_api_key_2026'
 
   // 4. Detect nếu là multipart (upload ảnh) — forward nguyên body + Content-Type
   const isMultipart = req.headers.get('content-type')?.includes('multipart/form-data')
