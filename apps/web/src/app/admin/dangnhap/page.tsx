@@ -45,8 +45,8 @@ export default function LoginPage() {
         <div className="flex flex-col items-center mb-6">
           <div className="relative h-12 w-44 select-none mb-4 flex items-center justify-center">
             <Image
-              src="/images/logo.png"
-              alt="Ý Nù Quán"
+              src="/logooo11.png"
+              alt="Cẩm Tuyền House's"
               fill
               className="object-contain"
               priority
@@ -56,7 +56,7 @@ export default function LoginPage() {
             🔐 Đăng nhập Admin
           </h1>
           <p className="text-slate-400 text-xs sm:text-sm text-center mt-1">
-            Hệ thống quản lý thực đơn Ý Nù Quán
+            Hệ thống quản lý thực đơn Cẩm Tuyền House
           </p>
         </div>
 
