@@ -158,18 +158,46 @@ export default function MenuClient({
 
       {/* ===== HEADER ===== */}
       <header className="bg-white border-b border-[#E8E0D0] shadow-sm sticky top-0 z-30">
-        {/* Top bar: logo + icons */}
+        {/* Top bar: logo + info */}
         <div className="flex items-center justify-between px-4 sm:px-8 py-3">
-          {/* Search icon */}
-          <button className="p-2 text-[#4A3728] hover:text-[#2D5A27] transition-colors" aria-label="Tìm kiếm">
+          {/* LEFT: Phone & Facebook (Desktop only) */}
+          <div className="flex-1 lg:flex hidden flex-col gap-2">
+            {/* Phone row */}
+            <a href="tel:0375023839" className="flex items-center gap-3 text-left group">
+              <div className="size-8 rounded-full bg-[#EBF3EC] flex items-center justify-center text-[#2D5A27] group-hover:bg-[#2D5A27] group-hover:text-white transition-all shrink-0">
+                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-bold text-[#2D5A27] text-xs sm:text-sm leading-tight">037.502.3839</p>
+                <p className="text-[#8B7355] text-[10px] sm:text-xs">Đặt hàng & tư vấn</p>
+              </div>
+            </a>
+            {/* Facebook row */}
+            <a href="https://www.facebook.com/camtuyen.nguyenthi.187" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-left group">
+              <div className="size-8 rounded-full bg-[#EBF3EC] flex items-center justify-center text-[#2D5A27] group-hover:bg-[#2D5A27] group-hover:text-white transition-all shrink-0">
+                <svg className="size-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-bold text-[#2D1810] text-xs sm:text-sm leading-tight">{"C\u1EA9m Tuy\u1EC1n House's"}</p>
+                <p className="text-[#8B7355] text-[10px] sm:text-xs">Nhắn tin ngay trên Facebook</p>
+              </div>
+            </a>
+          </div>
+
+          {/* Search Button for Mobile only */}
+          <button className="p-2 text-[#4A3728] hover:text-[#2D5A27] transition-colors lg:hidden" aria-label="Tìm kiếm">
             <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </button>
 
-          {/* Logo + Brand */}
-          <div className="flex flex-col items-center">
-            <div className="relative w-14 h-14 sm:w-16 sm:h-16">
+          {/* CENTER: Logo + Brand */}
+          <div className="flex flex-col items-center relative -top-1 sm:-top-1.5 shrink-0 mx-4">
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24">
               <Image
                 src="/logooo11.png"
                 alt="Cẩm Tuyền House's"
@@ -179,35 +207,43 @@ export default function MenuClient({
               />
             </div>
             <div className="text-center mt-0.5">
-              <p className="font-bold text-[#2D5A27] text-base sm:text-lg leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
-                Cẩm Tuyền House&apos;s
+              <p className="font-bold text-[#2D5A27] text-base sm:text-lg leading-tight" style={{ fontFamily: 'var(--font-lora), Georgia, serif' }}>
+                {"C\u1EA9m Tuy\u1EC1n House's"}
               </p>
               <p className="text-[#8B7355] text-[10px] tracking-widest font-medium">SINCE 2021</p>
             </div>
           </div>
 
-          {/* Cart icon + User icon */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowOrderPanel(true)}
-              className="relative p-2 text-[#4A3728] hover:text-[#2D5A27] transition-colors"
-              aria-label="Giỏ hàng"
-            >
-              <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              {totalQty > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-[#2D5A27] text-white text-[9px] font-black size-4 rounded-full flex items-center justify-center">
-                  {totalQty}
-                </span>
-              )}
-            </button>
-            <button className="p-2 text-[#4A3728] hover:text-[#2D5A27] transition-colors" aria-label="Tài khoản">
-              <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </button>
+          {/* RIGHT: Delivery & Freshness (Desktop only) */}
+          <div className="flex-1 lg:flex hidden flex-col gap-2 items-end">
+            {/* Delivery row */}
+            <div className="flex items-center gap-3 text-right">
+              <div>
+                <p className="font-bold text-[#2D5A27] text-xs sm:text-sm leading-tight">Giao trong ngày</p>
+                <p className="text-[#8B7355] text-[10px] sm:text-xs">Đặt trước 10:00 sáng</p>
+              </div>
+              <div className="size-8 rounded-full bg-[#EBF3EC] flex items-center justify-center text-[#2D5A27] shrink-0">
+                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 18h14M5 18a2 2 0 11-4 0 2 2 0 014 0zm14 0a2 2 0 11-4 0 2 2 0 014 0zm-7-4v-7H4v7h8zm0 0v-5h5l2.5 3H20v2h-8z" />
+                </svg>
+              </div>
+            </div>
+            {/* Freshness row */}
+            <div className="flex items-center gap-3 text-right">
+              <div>
+                <p className="font-bold text-[#2D5A27] text-xs sm:text-sm leading-tight">100% Đà Lạt tươi</p>
+                <p className="text-[#8B7355] text-[10px] sm:text-xs">Chọn lọc mỗi buổi sáng</p>
+              </div>
+              <div className="size-8 rounded-full bg-[#EBF3EC] flex items-center justify-center text-[#2D5A27] shrink-0">
+                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 20A7 7 0 019.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.58 1 9.2a7 7 0 01-14 3.19M11 20c2.2-2.2 4.9-5.2 6-8" />
+                </svg>
+              </div>
+            </div>
           </div>
+
+          {/* Spacer for Mobile only to keep centered */}
+          <div className="w-9 lg:hidden" aria-hidden="true" />
         </div>
 
         {/* Nav categories */}
@@ -277,6 +313,57 @@ export default function MenuClient({
 
         {/* ===== CỘT TRÁI: PRODUCT GRID ===== */}
         <main className="flex-1 lg:max-w-[calc(100%-380px)]">
+          {/* Mobile Quick Info Grid */}
+          <div className="lg:hidden grid grid-cols-2 gap-2 px-4 pt-5 pb-2">
+            {/* Phone */}
+            <a href="tel:0375023839" className="flex items-center gap-2.5 p-2.5 bg-white border border-[#E8E0D0] rounded-xl active:scale-[0.98] transition-all">
+              <div className="size-7 rounded-full bg-[#EBF3EC] flex items-center justify-center text-[#2D5A27] shrink-0">
+                <svg className="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-[#2D5A27] text-[11px] leading-tight truncate">037.502.3839</p>
+                <p className="text-[#8B7355] text-[9px]">Đặt hàng & tư vấn</p>
+              </div>
+            </a>
+            {/* Facebook */}
+            <a href="https://www.facebook.com/camtuyen.nguyenthi.187" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 p-2.5 bg-white border border-[#E8E0D0] rounded-xl active:scale-[0.98] transition-all">
+              <div className="size-7 rounded-full bg-[#EBF3EC] flex items-center justify-center text-[#2D5A27] shrink-0">
+                <svg className="size-3.5 fill-current" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-[#2D1810] text-[11px] leading-tight truncate">Cẩm Tuyền House</p>
+                <p className="text-[#8B7355] text-[9px]">Nhắn tin ngay</p>
+              </div>
+            </a>
+            {/* Delivery */}
+            <div className="flex items-center gap-2.5 p-2.5 bg-white border border-[#E8E0D0] rounded-xl">
+              <div className="size-7 rounded-full bg-[#EBF3EC] flex items-center justify-center text-[#2D5A27] shrink-0">
+                <svg className="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M5 18h14M5 18a2 2 0 11-4 0 2 2 0 014 0zm14 0a2 2 0 11-4 0 2 2 0 014 0zm-7-4v-7H4v7h8zm0 0v-5h5l2.5 3H20v2h-8z" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-[#2D5A27] text-[11px] leading-tight truncate">Giao trong ngày</p>
+                <p className="text-[#8B7355] text-[9px]">Đặt trước 10:00 sáng</p>
+              </div>
+            </div>
+            {/* Freshness */}
+            <div className="flex items-center gap-2.5 p-2.5 bg-white border border-[#E8E0D0] rounded-xl">
+              <div className="size-7 rounded-full bg-[#EBF3EC] flex items-center justify-center text-[#2D5A27] shrink-0">
+                <svg className="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M11 20A7 7 0 019.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.58 1 9.2a7 7 0 01-14 3.19M11 20c2.2-2.2 4.9-5.2 6-8" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-[#2D5A27] text-[11px] leading-tight truncate">100% Đà Lạt tươi</p>
+                <p className="text-[#8B7355] text-[9px]">Chọn lọc mỗi sáng</p>
+              </div>
+            </div>
+          </div>
           {/* Category heading */}
           {activeCategory && (
             <div className="px-4 sm:px-8 pt-6 pb-4">
@@ -381,7 +468,7 @@ export default function MenuClient({
         </main>
 
         {/* ===== CỘT PHẢI: ORDER PANEL (Desktop only) ===== */}
-        <aside className="hidden lg:flex lg:w-[380px] border-l border-[#E8E0D0] bg-white flex-col sticky top-[var(--header-height,140px)] h-[calc(100vh-140px)] self-start">
+        <aside className="hidden lg:flex lg:w-[380px] border-l border-[#E8E0D0] bg-[#FAFAF7] flex-col sticky top-[var(--header-height,140px)] h-[calc(100vh-140px)] self-start">
           <OrderPanel
             cart={cart}
             slug={slug}
@@ -397,12 +484,12 @@ export default function MenuClient({
         <div className="max-w-[1400px] mx-auto px-6 sm:px-12 py-10 grid grid-cols-1 sm:grid-cols-3 gap-8">
           {/* Brand */}
           <div>
-            <p className="font-bold text-xl mb-2" style={{ fontFamily: 'Georgia, serif' }}>Cẩm Tuyền House&apos;s</p>
+            <p className="font-bold text-xl mb-2" style={{ fontFamily: 'var(--font-lora), Georgia, serif' }}>{"C\u1EA9m Tuy\u1EC1n House's"}</p>
             <p className="text-[#C4A882] text-sm leading-relaxed">
               Chúng tôi tin rằng thực phẩm không chỉ để ăn mà còn để nuôi dưỡng tâm hồn và gắn kết yêu thương. Mỗi sản phẩm tại Cẩm Tuyền đều chứa đựng sự tận tâm từ người nông dân.
             </p>
             <div className="flex items-center gap-4 mt-4 text-[#C4A882] text-sm">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors flex items-center gap-1.5">
+              <a href="https://www.facebook.com/camtuyen.nguyenthi.187" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors flex items-center gap-1.5">
                 <svg className="size-4 fill-current" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
@@ -475,7 +562,7 @@ export default function MenuClient({
       {/* ===== MOBILE: Order panel bottom sheet ===== */}
       {showOrderPanel && (
         <div className="lg:hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex flex-col justify-end">
-          <div className="bg-white rounded-t-[2rem] max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+          <div className="bg-[#FAFAF7] rounded-t-[2rem] max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
             <div className="flex-1 overflow-y-auto">
               <OrderPanel
                 cart={cart}

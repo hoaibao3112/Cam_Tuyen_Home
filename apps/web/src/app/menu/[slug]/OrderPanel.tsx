@@ -115,7 +115,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
   // ===== BƯỚC 1: GIỎ HÀNG + FORM THÔNG TIN =====
   if (step === 'cart') {
     return (
-      <div className="flex flex-col h-full bg-white text-slate-800">
+      <div className="flex flex-col h-full bg-[#FAFAF7] text-slate-800">
         <div className="px-5 py-4 border-b border-orange-100/50 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-slate-800 font-extrabold text-lg flex items-center gap-2">
@@ -339,7 +339,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
 
   // ===== BƯỚC 2: THÀNH CÔNG =====
   return (
-    <div className="flex flex-col items-center justify-center h-full px-6 text-center gap-5 bg-white text-slate-800 py-10 relative">
+    <div className="flex flex-col items-center justify-center h-full px-6 text-center gap-5 bg-[#FAFAF7] text-slate-800 py-10 relative">
       {onClose && (
         <button
           onClick={onClose}
