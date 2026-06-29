@@ -28,8 +28,8 @@ function buildFullAddress(dto: {
 function parseOrderRefCode(ref: string): string {
   let code = ref
   // Bỏ prefix số
-  if (code.startsWith('w2568275--')) code = code.replace('w2568275--', '')
-  else if (code.startsWith('2568275--')) code = code.replace('2568275--', '')
+  if (code.startsWith('w1002559243--')) code = code.replace('w1002559243--', '')
+  else if (code.startsWith('1002559243--')) code = code.replace('1002559243--', '')
   // Bỏ prefix 'order'
   if (code.startsWith('order=')) code = code.replace('order=', '')
   else if (code.startsWith('order--')) code = code.replace('order--', '')
@@ -155,7 +155,7 @@ export class OrderService {
     )
 
     // 7. Trả về link mở Messenger cho khách
-    const messengerUrl = `https://m.me/${process.env.FB_PAGE_ID}?ref=2568275--order=${orderCode}`
+    const messengerUrl = `https://m.me/${process.env.FB_PAGE_ID}?ref=1002559243--order=${orderCode}`
     return {
       success: true,
       order_code: orderCode,

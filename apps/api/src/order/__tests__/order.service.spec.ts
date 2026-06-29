@@ -389,7 +389,7 @@ describe('OrderService — full flow', () => {
             messaging: [
               {
                 sender: { id: 'psid-002' },
-                postback: { referral: { ref: '2568275--order=DH123456' } },
+                postback: { referral: { ref: '1002559243--order=DH123456' } },
               },
             ],
           },
@@ -484,8 +484,8 @@ describe('OrderService — full flow', () => {
       ['order=DH123456', 'prefix order='],
       ['order_DH123456', 'prefix order_'],
       ['order-DH123456', 'prefix order-'],
-      ['2568275--order=DH123456', 'prefix 2568275-- + order='],
-      ['w2568275--order=DH123456', 'prefix w2568275-- + order='],
+      ['1002559243--order=DH123456', 'prefix 1002559243-- + order='],
+      ['w1002559243--order=DH123456', 'prefix w1002559243-- + order='],
       ['DH123456', 'không có prefix'],
     ]
 
