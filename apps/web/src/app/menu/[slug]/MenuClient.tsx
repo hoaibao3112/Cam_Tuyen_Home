@@ -97,10 +97,7 @@ export default function MenuClient({
     }
   }, [categories, activeCategory])
 
-  const SUB_CATEGORY_ENABLED = 'Món ăn vặt'
-
   const subCategories = useMemo(() => {
-    if (activeCategory !== SUB_CATEGORY_ENABLED) return []
     const subs = items
       .filter((i) => i.category === activeCategory)
       .map((i) => i.sub_category?.trim())
@@ -110,13 +107,15 @@ export default function MenuClient({
   }, [items, activeCategory])
 
   const hasNullSubCategory = useMemo(() => {
-    if (activeCategory !== SUB_CATEGORY_ENABLED) return false
-    return items.filter((i) => i.category === activeCategory).some((i) => !i.sub_category)
+    const activeItems = items.filter((i) => i.category === activeCategory)
+    const hasSomeSub = activeItems.some((i) => !!i.sub_category)
+    const hasSomeNoSub = activeItems.some((i) => !i.sub_category)
+    return hasSomeSub && hasSomeNoSub
   }, [items, activeCategory])
 
   const filtered = useMemo(() => {
     let result = items.filter((i) => activeCategory === '' || i.category === activeCategory)
-    if (activeSubCategory !== 'all' && activeCategory === SUB_CATEGORY_ENABLED) {
+    if (activeSubCategory !== 'all') {
       if (activeSubCategory === 'other') {
         result = result.filter((i) => !i.sub_category)
       } else {
@@ -266,7 +265,7 @@ export default function MenuClient({
                     : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0]'
                 }`}
               >
-                Món khác
+                Khác
               </button>
             )}
           </div>

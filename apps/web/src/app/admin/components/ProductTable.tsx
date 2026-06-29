@@ -60,7 +60,12 @@ export default function ProductTable({
               </tr>
             ) : (
               paginatedItems.map(item => {
-                const categoryCode = item.category === 'Món ăn healthy' ? 'HLT' : item.category === 'Nước uống' ? 'DRK' : 'FOD'
+                const categoryCode = 
+                  item.category === 'Rau Củ Quả Đà Lạt' ? 'VEG' :
+                  item.category === 'Hoa Tươi' ? 'FLW' :
+                  item.category === 'Trái Cây Nhập Khẩu' ? 'FRU' :
+                  item.category === 'Bánh Kẹo & Hạt Organic' ? 'ORG' :
+                  item.category === 'Đồ Sấy & Đặc Sản Đà Lạt' ? 'DRY' : 'AGR'
                 const itemSku = `SKU: ${categoryCode}-${item.id.slice(0, 4).toUpperCase()}`
                 
                 return (
@@ -74,7 +79,7 @@ export default function ProductTable({
                         {item.image_url ? (
                           <img src={item.image_url} alt={item.name} className="size-full object-cover" />
                         ) : (
-                          item.category === 'Món ăn healthy' ? '🥗' : item.category === 'Nước uống' ? '🥤' : '🍿'
+                          item.category === 'Rau Củ Quả Đà Lạt' ? '🥬' : item.category === 'Hoa Tươi' ? '🌸' : item.category === 'Trái Cây Nhập Khẩu' ? '🍎' : item.category === 'Bánh Kẹo & Hạt Organic' ? '🥜' : item.category === 'Đồ Sấy & Đặc Sản Đà Lạt' ? '🍇' : '🌿'
                         )}
                       </div>
                     </td>
@@ -87,11 +92,17 @@ export default function ProductTable({
                     <td className="py-3.5 px-6">
                       <div className="flex flex-col gap-1 items-start">
                         <span className={`text-[11px] font-bold px-3 py-1 rounded-full border ${
-                          item.category === 'Món ăn healthy'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-150'
-                            : item.category === 'Nước uống'
-                            ? 'bg-blue-50 text-blue-700 border-blue-150'
-                            : 'bg-amber-50 text-amber-700 border-amber-150'
+                          item.category === 'Rau Củ Quả Đà Lạt'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : item.category === 'Hoa Tươi'
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : item.category === 'Trái Cây Nhập Khẩu'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : item.category === 'Bánh Kẹo & Hạt Organic'
+                            ? 'bg-teal-50 text-teal-700 border-teal-200'
+                            : item.category === 'Đồ Sấy & Đặc Sản Đà Lạt'
+                            ? 'bg-orange-50 text-orange-700 border-orange-200'
+                            : 'bg-slate-50 text-slate-700 border-slate-200'
                         }`}>
                           {item.category}
                         </span>
@@ -155,7 +166,7 @@ export default function ProductTable({
                   {item.image_url ? (
                     <img src={item.image_url} alt={item.name} className="size-full object-cover" />
                   ) : (
-                    item.category === 'Món ăn healthy' ? '🥗' : item.category === 'Nước uống' ? '🥤' : '🍿'
+                    item.category === 'Rau Củ Quả Đà Lạt' ? '🥬' : item.category === 'Hoa Tươi' ? '🌸' : item.category === 'Trái Cây Nhập Khẩu' ? '🍎' : item.category === 'Bánh Kẹo & Hạt Organic' ? '🥜' : item.category === 'Đồ Sấy & Đặc Sản Đà Lạt' ? '🍇' : '🌿'
                   )}
                 </div>
 
@@ -163,11 +174,17 @@ export default function ProductTable({
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-1">
                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                      item.category === 'Món ăn healthy'
+                      item.category === 'Rau Củ Quả Đà Lạt'
                         ? 'bg-emerald-50 text-emerald-700'
-                        : item.category === 'Nước uống'
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'bg-amber-50 text-amber-700'
+                        : item.category === 'Hoa Tươi'
+                        ? 'bg-rose-50 text-rose-700'
+                        : item.category === 'Trái Cây Nhập Khẩu'
+                        ? 'bg-amber-50 text-amber-700'
+                        : item.category === 'Bánh Kẹo & Hạt Organic'
+                        ? 'bg-teal-50 text-teal-700'
+                        : item.category === 'Đồ Sấy & Đặc Sản Đà Lạt'
+                        ? 'bg-orange-50 text-orange-700'
+                        : 'bg-slate-50 text-slate-700'
                     }`}>
                       {item.category}
                     </span>

@@ -30,18 +30,26 @@ type Category = {
   sort_order: number
 }
 
-const PRESET_CATEGORIES = ['Món ăn healthy', 'Món ăn vặt', 'Nước uống']
+const PRESET_CATEGORIES = [
+  'Rau Củ Quả Đà Lạt',
+  'Hoa Tươi',
+  'Trái Cây Nhập Khẩu',
+  'Bánh Kẹo & Hạt Organic',
+  'Đồ Sấy & Đặc Sản Đà Lạt'
+]
 
 const SUB_CATEGORIES_MAP: Record<string, string[]> = {
-  'Món ăn healthy': ['Cơm', 'Bún', 'Phở', 'Salad'],
-  'Món ăn vặt': ['Mì', 'Súp', 'Tobokki', 'Bánh tráng', 'Viên chiên', 'Ăn kèm'],
-  'Nước uống': ['Trà sữa', 'Trà trái cây', 'Cà phê', 'Nước ngọt', 'Đá xay'],
+  'Rau Củ Quả Đà Lạt': ['Rau lá', 'Rau củ', 'Quả sạch', 'Nấm & Khác'],
+  'Hoa Tươi': ['Hoa bó', 'Hoa giỏ/hộp', 'Hoa cắt cành', 'Phụ kiện hoa'],
+  'Trái Cây Nhập Khẩu': ['Trái cây Mỹ/Úc', 'Trái cây Nhật/Hàn', 'Trái cây Nam Phi', 'Hộp quà trái cây'],
+  'Bánh Kẹo & Hạt Organic': ['Hạt dinh dưỡng', 'Bánh ăn kiêng', 'Kẹo thảo mộc'],
+  'Đồ Sấy & Đặc Sản Đà Lạt': ['Trái cây sấy dẻo', 'Trái cây sấy giòn', 'Mứt đặc sản', 'Trà & Cà phê'],
 }
 
 const emptyForm = {
   name: '',
   price: '',
-  category: 'Món ăn healthy',
+  category: 'Rau Củ Quả Đà Lạt',
   customCategory: '',
   sub_category: '',
   customSubCategory: '',
