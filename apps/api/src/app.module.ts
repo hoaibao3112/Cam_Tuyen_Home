@@ -7,6 +7,7 @@ import { CategoriesModule } from './categories/categories.module'
 import { CleanupModule } from './cleanup/cleanup.module'
 import { StatsModule } from './stats/stats.module'
 import { AppController } from './app.controller'
+import { LocationController } from './location/location.controller'
 
 @Module({
   imports: [
@@ -18,6 +19,6 @@ import { AppController } from './app.controller'
     CleanupModule,
     StatsModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, LocationController],
 })
 export class AppModule {}

@@ -40,6 +40,10 @@ export class CreateOrderDto {
   @IsString()
   note?: string
 
+  @IsOptional()
+  @IsString()
+  address_province?: string
+
   @IsString()
   @IsNotEmpty()
   address_district: string

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { CartItem } from './MenuClient'
 import { MenuItem } from './page'
-import tienGiangData from '@/lib/tien-giang.json'
 import Image from 'next/image'
 
 interface Props {
@@ -28,38 +27,140 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
   const [error, setError] = useState('')
 
   const [deliveryMethod, setDeliveryMethod] = useState<'ship' | 'pickup'>('ship')
+  
+  const [provinces, setProvinces] = useState<any[]>([])
+  const [districts, setDistricts] = useState<any[]>([])
+  const [wards, setWards] = useState<any[]>([])
+
+  const [province, setProvince] = useState('')
+  const [provinceId, setProvinceId] = useState('')
   const [district, setDistrict] = useState('')
+  const [districtId, setDistrictId] = useState('')
   const [ward, setWard] = useState('')
+  const [street, setStreet] = useState('')
 
   const total = cart.reduce((s, i) => s + i.price * i.quantity, 0)
   const totalQty = cart.reduce((s, i) => s + i.quantity, 0)
 
-  const wardsList = tienGiangData.find((d) => d.name === district)?.wards || []
+  // Fetch provinces on mount or when deliveryMethod becomes 'ship'
+  useEffect(() => {
+    if (deliveryMethod !== 'ship') return
+    
+    async function fetchProvinces() {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
+        const res = await fetch(`${apiUrl}/locations/provinces`)
+        if (!res.ok) throw new Error('Không thể tải danh sách tỉnh thành')
+        const data = await res.json()
+        if (data.error === 0) {
+          setProvinces(data.data)
+        }
+      } catch (err) {
+        console.error('Lỗi lấy danh sách tỉnh/thành:', err)
+      }
+    }
+    
+    fetchProvinces()
+  }, [deliveryMethod])
 
   // Load customer details from localStorage on client mount
   useEffect(() => {
     try {
       const storedName = localStorage.getItem('ynq_customer_name')
       const storedPhone = localStorage.getItem('ynq_customer_phone')
+      const storedProvince = localStorage.getItem('ynq_customer_province')
+      const storedProvinceId = localStorage.getItem('ynq_customer_province_id')
       const storedDistrict = localStorage.getItem('ynq_customer_district')
+      const storedDistrictId = localStorage.getItem('ynq_customer_district_id')
       const storedWard = localStorage.getItem('ynq_customer_ward')
+      const storedStreet = localStorage.getItem('ynq_customer_street')
+
       if (storedName) setName(storedName)
       if (storedPhone) setPhone(storedPhone)
-      if (storedDistrict) setDistrict(storedDistrict)
-      if (storedWard) setWard(storedWard)
+      if (storedStreet) setStreet(storedStreet)
+
+      if (storedProvince && storedProvinceId) {
+        setProvince(storedProvince)
+        setProvinceId(storedProvinceId)
+        
+        // Fetch districts for this province
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
+        fetch(`${apiUrl}/locations/districts/${storedProvinceId}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.error === 0) {
+              setDistricts(data.data)
+              if (storedDistrict && storedDistrictId) {
+                setDistrict(storedDistrict)
+                setDistrictId(storedDistrictId)
+                
+                // Fetch wards for this district
+                return fetch(`${apiUrl}/locations/wards/${storedDistrictId}`)
+              }
+            }
+          })
+          .then(res => res ? res.json() : null)
+          .then(data => {
+            if (data && data.error === 0) {
+              setWards(data.data)
+              if (storedWard) setWard(storedWard)
+            }
+          })
+          .catch(err => console.error('Error restoring locations from storage:', err))
+      }
     } catch (e) {
       console.error('Error loading customer details from localStorage', e)
     }
   }, [])
 
-  const handleDistrictChange = (value: string) => {
-    setDistrict(value)
+  const handleProvinceChange = async (provId: string, provName: string) => {
+    setProvinceId(provId)
+    setProvince(provName)
+    setDistrictId('')
+    setDistrict('')
     setWard('')
+    setWards([])
+    setDistricts([])
+    
+    if (!provId) return
+    
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
+      const res = await fetch(`${apiUrl}/locations/districts/${provId}`)
+      if (!res.ok) throw new Error('Không thể tải danh sách quận huyện')
+      const data = await res.json()
+      if (data.error === 0) {
+        setDistricts(data.data)
+      }
+    } catch (err) {
+      console.error('Lỗi lấy danh sách quận/huyện:', err)
+    }
+  }
+
+  const handleDistrictChange = async (distId: string, distName: string) => {
+    setDistrictId(distId)
+    setDistrict(distName)
+    setWard('')
+    setWards([])
+    
+    if (!distId) return
+    
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
+      const res = await fetch(`${apiUrl}/locations/wards/${distId}`)
+      if (!res.ok) throw new Error('Không thể tải danh sách phường xã')
+      const data = await res.json()
+      if (data.error === 0) {
+        setWards(data.data)
+      }
+    } catch (err) {
+      console.error('Lỗi lấy danh sách phường/xã:', err)
+    }
   }
 
   async function handleSubmit() {
-      if (deliveryMethod === 'ship' && (!district || !ward)) {
-        setError('Vui lòng chọn Quận/Huyện và Phường/Xã ở Tiền Giang')
+      if (deliveryMethod === 'ship' && (!province || !district || !ward || !street.trim())) {
+        setError('Vui lòng chọn Tỉnh/Thành phố, Quận/Huyện, Phường/Xã và nhập địa chỉ cụ thể')
         return
       }
       setError('')
@@ -75,8 +176,10 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
               customer_name: name.trim(),
               customer_phone: phone.trim(),
               note: note.trim(),
+              address_province: deliveryMethod === 'ship' ? province : 'Tới quán lấy',
               address_district: deliveryMethod === 'ship' ? district : 'Tới quán lấy',
               address_ward: deliveryMethod === 'ship' ? ward : 'Tới quán lấy',
+              address_street: deliveryMethod === 'ship' ? street.trim() : 'Tới quán lấy',
               items: cart.map((c) => ({
                 menu_item_id: c.id,
                 name: c.name,
@@ -96,8 +199,12 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
           localStorage.setItem('ynq_customer_name', name.trim())
           localStorage.setItem('ynq_customer_phone', phone.trim())
           if (deliveryMethod === 'ship') {
+            localStorage.setItem('ynq_customer_province', province)
+            localStorage.setItem('ynq_customer_province_id', provinceId)
             localStorage.setItem('ynq_customer_district', district)
+            localStorage.setItem('ynq_customer_district_id', districtId)
             localStorage.setItem('ynq_customer_ward', ward)
+            localStorage.setItem('ynq_customer_street', street.trim())
           }
         } catch (e) {
           console.error('Error saving customer details to localStorage', e)
@@ -248,19 +355,47 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
 
                 {deliveryMethod === 'ship' && (
                   <>
+                    {/* Chọn Tỉnh/Thành phố */}
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                      <label className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
+                        Tỉnh / Thành phố *
+                      </label>
+                      <select
+                        value={provinceId}
+                        onChange={(e) => {
+                          const id = e.target.value
+                          const selectedOpt = e.target.options[e.target.selectedIndex]
+                          handleProvinceChange(id, selectedOpt ? selectedOpt.text : '')
+                        }}
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200 cursor-pointer"
+                      >
+                        <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                        {provinces.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                     {/* Chọn Quận/Huyện */}
                     <div className="animate-in fade-in slide-in-from-top-2 duration-200">
                       <label className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
-                        Quận / Huyện (Tiền Giang) *
+                        Quận / Huyện *
                       </label>
                       <select
-                        value={district}
-                        onChange={(e) => handleDistrictChange(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200 cursor-pointer"
+                        value={districtId}
+                        onChange={(e) => {
+                          const id = e.target.value
+                          const selectedOpt = e.target.options[e.target.selectedIndex]
+                          handleDistrictChange(id, selectedOpt ? selectedOpt.text : '')
+                        }}
+                        disabled={!provinceId}
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       >
                         <option value="">-- Chọn Quận/Huyện --</option>
-                        {tienGiangData.map((d) => (
-                          <option key={d.code} value={d.name}>
+                        {districts.map((d) => (
+                          <option key={d.id} value={d.id}>
                             {d.name}
                           </option>
                         ))}
@@ -275,19 +410,31 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                       <select
                         value={ward}
                         onChange={(e) => setWard(e.target.value)}
-                        disabled={!district}
+                        disabled={!districtId}
                         className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       >
                         <option value="">-- Chọn Phường/Xã --</option>
-                        {wardsList.map((w) => (
-                          <option key={w} value={w}>
-                            {w}
+                        {wards.map((w) => (
+                          <option key={w.id} value={w.name}>
+                            {w.name}
                           </option>
                         ))}
                       </select>
                     </div>
 
-
+                    {/* Địa chỉ cụ thể */}
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                      <label className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
+                        Địa chỉ cụ thể (Số nhà, tên đường...) *
+                      </label>
+                      <input
+                        type="text"
+                        value={street}
+                        onChange={(e) => setStreet(e.target.value)}
+                        placeholder="Ví dụ: 123 Nguyễn Huệ"
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200"
+                      />
+                    </div>
                   </>
                 )}
 
