@@ -93,28 +93,35 @@ export class OrderService {
       throw new BadRequestException('Lỗi kiểm tra giá món ăn: ' + menuError.message)
     }
 
-    const priceMap = new Map<string, number>(
-      (menuItems || []).map((m: { id: string; price: number }) => [m.id, m.price]),
+    const menuItemsMap = new Map<string, { price: number; is_active: boolean }>(
+      (menuItems || []).map((m: { id: string; price: number; is_active: boolean }) => [
+        m.id,
+        { price: m.price, is_active: m.is_active },
+      ]),
     )
 
     // Kiểm tra tất cả món có tồn tại và còn active không
     for (const item of dto.items) {
-      if (!priceMap.has(item.menu_item_id)) {
+      const dbItem = menuItemsMap.get(item.menu_item_id)
+      if (!dbItem) {
         throw new BadRequestException(`Món "${item.name}" không tồn tại hoặc đã bị xoá`)
+      }
+      if (dbItem.is_active === false) {
+        throw new BadRequestException(`Món "${item.name}" hiện không còn phục vụ`)
       }
     }
 
     // 3. Tính tổng theo giá server — bỏ qua giá client gửi lên
     const orderCode = `DH${Date.now()}`
     const total = dto.items.reduce((sum, item) => {
-      const serverPrice = priceMap.get(item.menu_item_id)!
+      const serverPrice = menuItemsMap.get(item.menu_item_id)!.price
       return sum + serverPrice * item.quantity
     }, 0)
 
     // Ghi đè price trong items bằng giá server để lưu vào DB
     const verifiedItems = dto.items.map((item) => ({
       ...item,
-      price: priceMap.get(item.menu_item_id)!,
+      price: menuItemsMap.get(item.menu_item_id)!.price,
     }))
 
     // 4. Ghép địa chỉ

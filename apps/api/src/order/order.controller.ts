@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Get, Query, HttpCode, Headers, UseGuards } from '@nestjs/common'
+import { ThrottlerGuard } from '@nestjs/throttler'
 import { OrderService } from './order.service'
 import { CreateOrderDto } from './dto/create-order.dto'
 import { ApiKeyGuard } from '../common/guards/api-key.guard'
@@ -8,6 +9,7 @@ export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
   @Post()
+  @UseGuards(ThrottlerGuard)
   createOrder(@Body() dto: CreateOrderDto) {
     return this.orderService.createOrder(dto)
   }
