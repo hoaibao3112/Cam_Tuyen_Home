@@ -1,4 +1,4 @@
-﻿import { Controller, Get, Res, HttpStatus } from '@nestjs/common'
+import { Controller, Get, Res, HttpStatus } from '@nestjs/common'
 import { Response } from 'express'
 import { SupabaseService } from './supabase/supabase.service'
 
@@ -8,7 +8,7 @@ export class AppController {
 
   @Get()
   getHello() {
-    return { message: 'YNuQuan API is running!' }
+    return { message: 'Cẩm Tuyền Home API is running!' }
   }
 
   @Get('health')

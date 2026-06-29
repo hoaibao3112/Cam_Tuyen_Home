@@ -185,7 +185,7 @@ export class OrderService {
     const fullAddress = buildFullAddress(dto)
 
     const message =
-      `Ý Nù Quán xác nhận đơn hàng của Anh/Chị ${dto.customer_name} ạ\n\n` +
+      `Cẩm Tuyền Home xác nhận đơn hàng của Anh/Chị ${dto.customer_name} ạ\n\n` +
       `📌 Mã đơn: ${orderCode}\n` +
       `👤 Khách hàng: ${dto.customer_name}\n` +
       `📞 Số điện thoại: ${dto.customer_phone}\n` +
@@ -299,7 +299,7 @@ export class OrderService {
         .join('\n')
 
       const message =
-        `Ý Nù Quán xác nhận đơn hàng của Anh/Chị ${order.customer_name} ạ\n\n` +
+        `Cẩm Tuyền Home xác nhận đơn hàng của Anh/Chị ${order.customer_name} ạ\n\n` +
         `📌 THÔNG TIN ĐƠN HÀNG:\n` +
         `• Mã đơn hàng: ${order.order_code}\n` +
         `• Số điện thoại: ${order.customer_phone}\n` +
@@ -363,7 +363,7 @@ export class OrderService {
       .join('\n')
 
     const message =
-      `Ý Nù Quán xác nhận đơn hàng của Anh/Chị ${order.customer_name} ạ\n\n` +
+      `Cẩm Tuyền Home xác nhận đơn hàng của Anh/Chị ${order.customer_name} ạ\n\n` +
       `📌 THÔNG TIN ĐƠN HÀNG:\n` +
       `• Mã đơn hàng: ${order.order_code}\n` +
       `• Số điện thoại: ${order.customer_phone}\n` +
