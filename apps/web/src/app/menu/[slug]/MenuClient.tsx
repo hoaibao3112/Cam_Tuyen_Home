@@ -498,7 +498,7 @@ export default function MenuClient({
 
       {/* ===== FOOTER ===== */}
       <footer className="bg-[#2D1810] text-white mt-auto">
-        <div className="max-w-[1400px] mx-auto px-6 sm:px-12 py-10 grid grid-cols-1 sm:grid-cols-3 gap-8">
+        <div className="max-w-[1400px] mx-auto px-6 sm:px-12 py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
             <p className="font-bold text-xl mb-2" style={{ fontFamily: 'var(--font-lora), Georgia, serif' }}>{"C\u1EA9m Tuy\u1EC1n House's"}</p>
@@ -535,9 +535,31 @@ export default function MenuClient({
           <div>
             <p className="font-bold text-sm uppercase tracking-widest text-[#C4A882] mb-4">Liên Hệ</p>
             <ul className="space-y-2.5 text-sm text-[#C4A882]">
-              <li>Địa chỉ: Thành phố Đà Lạt, Lâm Đồng</li>
+              <li>Địa chỉ: ~ Cầu Ngũ Hiệp, Cai Lậy, Tiền Giang</li>
               <li>Giờ mở cửa: 07:00 – 21:00</li>
             </ul>
+          </div>
+
+          {/* Kết nối Fanpage */}
+          <div>
+            <p className="font-bold text-sm uppercase tracking-widest text-[#C4A882] mb-4">Kết Nối Fanpage</p>
+            <a
+              href="https://www.facebook.com/camtuyen.nguyenthi.187"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-white p-2 rounded-xl hover:opacity-90 transition-opacity shadow-md"
+            >
+              <Image
+                src="/QRTrang.png"
+                alt="Facebook QR Code"
+                width={112}
+                height={112}
+                className="w-28 h-28 object-contain"
+              />
+            </a>
+            <p className="text-xs text-[#C4A882] mt-2">
+              Quét mã để truy cập Facebook Page
+            </p>
           </div>
         </div>
 
