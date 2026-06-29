@@ -26,6 +26,18 @@ const BADGE_COLOR: Record<string, string> = {
   'Đặc Sản': 'bg-rose-600',
 }
 
+// Helper to get unit label based on category name
+function getItemUnit(category: string): string {
+  const cat = category?.trim()
+  if (cat === 'Rau Củ Quả Đà Lạt' || cat === 'Trái Cây Nhập Khẩu') {
+    return 'kg'
+  }
+  if (cat === 'Hoa Tươi') {
+    return 'bó'
+  }
+  return ''
+}
+
 export default function MenuClient({
   items: initialItems,
   slug,
@@ -422,6 +434,11 @@ export default function MenuClient({
                       </p>
                       <p className="text-[#2D5A27] font-extrabold text-sm sm:text-base mt-1.5">
                         {item.price.toLocaleString('vi-VN')}đ
+                        {getItemUnit(item.category) && (
+                          <span className="text-xs text-[#8B7355] font-semibold ml-1">
+                            / {getItemUnit(item.category)}
+                          </span>
+                        )}
                       </p>
 
                       {/* Button */}
@@ -624,6 +641,11 @@ export default function MenuClient({
                 </h3>
                 <p className="text-[#2D5A27] font-extrabold text-lg sm:text-2xl mt-2">
                   {selectedItem.price.toLocaleString('vi-VN')}đ
+                  {getItemUnit(selectedItem.category) && (
+                    <span className="text-sm text-[#8B7355] font-semibold ml-1">
+                      / {getItemUnit(selectedItem.category)}
+                    </span>
+                  )}
                 </p>
                 <div className="mt-4 sm:mt-5 border-t border-[#EDE8E0] pt-4">
                   <h4 className="text-[10px] sm:text-xs font-extrabold text-[#8B7355] uppercase tracking-widest mb-1.5">
@@ -645,7 +667,7 @@ export default function MenuClient({
                   <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Thêm vào đơn · {selectedItem.price.toLocaleString('vi-VN')}đ
+                  Thêm vào đơn · {selectedItem.price.toLocaleString('vi-VN')}đ{getItemUnit(selectedItem.category) ? ` / ${getItemUnit(selectedItem.category)}` : ''}
                 </button>
               ) : (
                 <div className="flex items-center gap-3">
