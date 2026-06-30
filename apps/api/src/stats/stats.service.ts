@@ -1,5 +1,36 @@
-﻿import { Injectable, BadRequestException } from '@nestjs/common'
+import { Injectable, BadRequestException } from '@nestjs/common'
 import { SupabaseService } from '../supabase/supabase.service'
+
+/**
+ * Convert any server date to Vietnam timezone offset (UTC+7) Date object.
+ * So that local methods like getHours(), getFullYear(), getDate() will represent Vietnam time.
+ */
+function toVietnamDate(date: Date = new Date()): Date {
+  const tzOffset = date.getTimezoneOffset()
+  const targetOffset = -420 // GMT+7 is -420 minutes
+  const diff = (tzOffset - targetOffset) * 60 * 1000
+  return new Date(date.getTime() + diff)
+}
+
+/**
+ * Convert a Date object representing Vietnam local time back to UTC Date.
+ */
+function toUtcDate(vnDate: Date): Date {
+  const tzOffset = new Date().getTimezoneOffset()
+  const targetOffset = -420
+  const diff = (tzOffset - targetOffset) * 60 * 1000
+  return new Date(vnDate.getTime() - diff)
+}
+
+/**
+ * Format a Date object (with local VN components) as YYYY-MM-DD.
+ */
+function formatYYYYMMDD(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
 @Injectable()
 export class StatsService {

@@ -35,17 +35,18 @@ interface CategoryManagerProps {
   onCategoriesChanged?: () => void
 }
 
-// Component từng dòng category kéo thả
 function SortableCategoryItem({
   category,
   isSelected,
   onSelect,
+  onEdit,
   onDelete,
   isPlaceholder = false,
 }: {
   category: Category
   isSelected: boolean
   onSelect: () => void
+  onEdit: (id: string, currentName: string) => void
   onDelete: (id: string) => void
   isPlaceholder?: boolean
 }) {
@@ -95,19 +96,35 @@ function SortableCategoryItem({
         <span className="flex-1 text-sm font-semibold truncate py-2 pr-2">{category.name}</span>
       </div>
 
-      {/* Nút xóa: touch target 44x44px */}
-      <button
-        onClick={e => {
-          e.stopPropagation()
-          onDelete(category.id)
-        }}
-        className="size-11 flex items-center justify-center text-slate-300 hover:text-red-500 active:text-red-700 transition-colors flex-shrink-0 focus:outline-none cursor-pointer"
-        aria-label={`Xóa danh mục ${category.name}`}
-      >
-        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+      <div className="flex items-center flex-shrink-0 pr-1">
+        {/* Nút sửa: touch target 44x44px */}
+        <button
+          onClick={e => {
+            e.stopPropagation()
+            onEdit(category.id, category.name)
+          }}
+          className="size-11 flex items-center justify-center text-slate-300 hover:text-blue-500 active:text-blue-700 transition-colors flex-shrink-0 focus:outline-none cursor-pointer"
+          aria-label={`Sửa danh mục ${category.name}`}
+        >
+          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+        </button>
+
+        {/* Nút xóa: touch target 44x44px */}
+        <button
+          onClick={e => {
+            e.stopPropagation()
+            onDelete(category.id)
+          }}
+          className="size-11 flex items-center justify-center text-slate-300 hover:text-red-500 active:text-red-700 transition-colors flex-shrink-0 focus:outline-none cursor-pointer"
+          aria-label={`Xóa danh mục ${category.name}`}
+        >
+          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
     </div>
   )
 }
@@ -251,6 +268,37 @@ export default function CategoryManager({
     }
   }
 
+  const handleEditCategory = async (id: string, currentName: string) => {
+    const newName = prompt('Nhập tên danh mục mới:', currentName)
+    if (newName === null) return
+    const trimmed = newName.trim()
+    if (!trimmed || trimmed === currentName) return
+
+    try {
+      const res = await fetch(`/api/admin/categories/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop_slug: shopSlug, name: trimmed }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.message || 'Lỗi cập nhật tên danh mục')
+      }
+
+      showToast(`Đã đổi tên danh mục thành "${trimmed}"`)
+      await fetchCategories()
+      
+      // Nếu category đang sửa đang được chọn, cập nhật selection state ở parent
+      if (selectedCategory === currentName) {
+        onSelectCategory(trimmed)
+      }
+      onCategoriesChanged?.()
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi cập nhật tên danh mục', 'error')
+    }
+  }
+
   useEffect(() => {
     if (isAddModalOpen) {
       setTimeout(() => inputRef.current?.focus(), 100)
@@ -327,6 +375,7 @@ export default function CategoryManager({
                     category={cat}
                     isSelected={selectedCategory === cat.name}
                     onSelect={() => onSelectCategory(cat.name)}
+                    onEdit={handleEditCategory}
                     onDelete={handleDeleteCategory}
                   />
                 ))}

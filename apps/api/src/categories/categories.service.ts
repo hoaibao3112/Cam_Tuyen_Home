@@ -145,4 +145,54 @@ export class CategoriesService {
 
     return { success: true }
   }
+
+  async updateCategory(id: string, shop_slug: string, newName: string) {
+    const trimmedNewName = newName.trim()
+    if (!trimmedNewName) {
+      throw new BadRequestException('Tên danh mục mới không được trống')
+    }
+
+    // 1. Tìm thông tin category cũ
+    const { data: category, error: getError } = await this.supabase.db
+      .from('categories')
+      .select('*')
+      .eq('id', id)
+      .eq('shop_slug', shop_slug)
+      .single()
+
+    if (getError || !category) {
+      throw new NotFoundException('Không tìm thấy danh mục để cập nhật')
+    }
+
+    const oldName = category.name
+    if (oldName.trim().toLowerCase() === trimmedNewName.toLowerCase()) {
+      return category
+    }
+
+    // 2. Cập nhật tên trong bảng categories
+    const { error: updateError } = await this.supabase.db
+      .from('categories')
+      .update({ name: trimmedNewName })
+      .eq('id', id)
+
+    if (updateError) {
+      throw new BadRequestException('Không thể cập nhật tên danh mục: ' + updateError.message)
+    }
+
+    // 3. Cập nhật tất cả menu_items thuộc category cũ sang category mới
+    const { error: itemsUpdateError } = await this.supabase.db
+      .from('menu_items')
+      .update({ category: trimmedNewName })
+      .eq('shop_slug', shop_slug)
+      .eq('category', oldName)
+
+    if (itemsUpdateError) {
+      console.error('Lỗi cascade cập nhật menu_items:', itemsUpdateError.message)
+    }
+
+    // Xóa cache menu
+    this.menuService.clearCache()
+
+    return { id, name: trimmedNewName }
+  }
 }

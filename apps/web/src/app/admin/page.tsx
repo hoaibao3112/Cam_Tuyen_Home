@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -453,6 +453,49 @@ export default function AdminPage() {
     }
   }
 
+  const handleRenameSubCategory = async (category: string, oldSub: string, newSub: string) => {
+    const trimmed = newSub.trim()
+    if (!trimmed) return
+    if (trimmed === oldSub) return
+    
+    try {
+      const targetItems = items.filter(
+        item => item.category === category && item.sub_category === oldSub
+      )
+      
+      await Promise.all(
+        targetItems.map(item =>
+          fetch(`/api/admin/menu/${item.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...item, sub_category: trimmed }),
+          })
+        )
+      )
+      
+      const oldKey = `${category}::${oldSub}`
+      setDeletedSubCategoriesSet(prev => {
+        const next = new Set(prev)
+        next.add(oldKey) // ẩn preset cũ trong dropdown
+        try {
+          localStorage.setItem('deletedSubCategories', JSON.stringify(Array.from(next)))
+        } catch { /* ignore */ }
+        return next
+      })
+
+      await fetchItems(shopSlug)
+      
+      if (form.sub_category === oldSub) {
+        setForm(prev => ({ ...prev, sub_category: trimmed, customSubCategory: '' }))
+      }
+      
+      showMsg(`Đã đổi tên nhóm phụ thành "${trimmed}"${targetItems.length > 0 ? ` (${targetItems.length} sản phẩm đã được cập nhật)` : ''}`)
+    } catch (err) {
+      showMsg('Lỗi khi đổi tên nhóm phụ!', 'error')
+      console.error(err)
+    }
+  }
+
   // Đóng filter dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -763,6 +806,7 @@ export default function AdminPage() {
           onRemoveImage={handleRemoveImage}
           onCancel={handleCancel}
           onDeleteSubCategory={handleDeleteSubCategory}
+          onRenameSubCategory={handleRenameSubCategory}
         />
       )}
     </div>
