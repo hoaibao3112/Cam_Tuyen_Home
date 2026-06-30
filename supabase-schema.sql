@@ -9,6 +9,11 @@ create table menu_items (
   category text default 'Món chính',
   sub_category text,
   is_active boolean default true,
+  track_stock boolean default false,
+  stock numeric default 0,
+  import_price numeric default 0,
+  unit text,
+  sort_order integer default 0,
   created_at timestamp with time zone default now()
 );
 
