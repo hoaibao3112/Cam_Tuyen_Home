@@ -155,7 +155,9 @@ export class OrderService {
         items: verifiedItems,
         total_price: total,
         note: noteWithAddress,
-        status: 'pending',
+        // Khach dat la coi nhu don hoan thanh ngay (kho da tru o buoc 5.1 ben duoi).
+        // Admin chi doi sang 'cancelled' khi khach bom hang / huy don.
+        status: 'done',
       })
       .select()
       .single()

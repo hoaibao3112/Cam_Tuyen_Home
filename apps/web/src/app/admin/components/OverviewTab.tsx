@@ -168,7 +168,7 @@ export default function OverviewTab({ shopSlug }: OverviewTabProps) {
           sub={`${todayData?.totalOrders ?? 0} đơn hôm nay`} highlight />
         <StatCard icon="🌅" accent="bg-amber-50" label="Đơn hôm nay"
           value={`${todayData?.totalOrders ?? 0} đơn`}
-          sub={`⏳ Chờ xử lý: ${todayData?.countByStatus.pending ?? 0}`} />
+          sub={`❌ Bom hàng hôm nay: ${todayData?.countByStatus.cancelled ?? 0}`} />
         <StatCard icon="💰" accent="bg-sky-50" label={`Doanh thu tháng ${month}`}
           value={fmt(summary?.monthlyRevenue ?? 0)}
           sub={`${summary?.monthlyOrdersCount ?? 0} đơn`} />
@@ -488,7 +488,7 @@ export default function OverviewTab({ shopSlug }: OverviewTabProps) {
                 {todayData.recentOrders.map(order => {
                   const isCancelled = order.status === 'cancelled'
                   const isPending   = order.status === 'pending'
-                  const statusLabel = isCancelled ? 'Hủy / Boom' : isPending ? 'Chờ xử lý' : 'Thành công'
+                  const statusLabel = isCancelled ? 'Hủy / Boom' : isPending ? 'Đang xử lý (cũ)' : 'Thành công'
                   const statusColor = isCancelled ? 'text-rose-600' : isPending ? 'text-amber-600' : 'text-emerald-600'
                   const statusBg    = isCancelled ? 'bg-rose-50' : isPending ? 'bg-amber-50' : 'bg-emerald-50'
                   const statusDot   = isCancelled ? 'bg-rose-400' : isPending ? 'bg-amber-400' : 'bg-emerald-400'
