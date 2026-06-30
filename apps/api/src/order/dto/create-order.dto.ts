@@ -44,13 +44,13 @@ export class CreateOrderDto {
   @IsString()
   address_province?: string
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  address_district: string
+  address_district?: string
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  address_ward: string
+  address_ward?: string
 
   @IsOptional()
   @IsString()

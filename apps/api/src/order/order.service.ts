@@ -10,15 +10,23 @@ import axios from 'axios'
  * Tập trung logic tại đây để tránh copy-paste ở nhiều nơi.
  */
 function buildFullAddress(dto: {
-  address_district: string
-  address_ward: string
+  address_district?: string
+  address_ward?: string
   address_street?: string
   address_province?: string
 }): string {
   const isPickup =
     dto.address_district === 'Tới quán lấy' || dto.address_ward === 'Tới quán lấy'
   if (isPickup) return 'Khách tự tới quán lấy (Không giao hàng)'
-  return `${dto.address_street ? dto.address_street + ', ' : ''}${dto.address_ward}, ${dto.address_district}, ${dto.address_province || 'Tiền Giang'}`
+  const parts = [
+    dto.address_street,
+    dto.address_ward,
+    dto.address_district,
+    dto.address_province
+  ]
+    .map((p) => p?.trim())
+    .filter(Boolean)
+  return parts.length > 0 ? parts.join(', ') : 'Giao hàng tận nơi'
 }
 
 /**
