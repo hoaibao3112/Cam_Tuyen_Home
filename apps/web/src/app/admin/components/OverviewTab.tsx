@@ -487,11 +487,12 @@ export default function OverviewTab({ shopSlug }: OverviewTabProps) {
               <div className="space-y-2">
                 {todayData.recentOrders.map(order => {
                   const isCancelled = order.status === 'cancelled'
-                  const isPending   = order.status === 'pending'
-                  const statusLabel = isCancelled ? 'Hủy / Boom' : isPending ? 'Đang xử lý (cũ)' : 'Thành công'
-                  const statusColor = isCancelled ? 'text-rose-600' : isPending ? 'text-amber-600' : 'text-emerald-600'
-                  const statusBg    = isCancelled ? 'bg-rose-50' : isPending ? 'bg-amber-50' : 'bg-emerald-50'
-                  const statusDot   = isCancelled ? 'bg-rose-400' : isPending ? 'bg-amber-400' : 'bg-emerald-400'
+                  // Chỉ 2 trạng thái thực tế: thành công hoặc hủy/boom. Status cũ (pending/confirmed)
+                  // trong dữ liệu trước khi đổi flow vẫn coi là 'Thành công' để không hiện nhãn rác.
+                  const statusLabel = isCancelled ? 'Hủy / Boom' : 'Thành công'
+                  const statusColor = isCancelled ? 'text-rose-600' : 'text-emerald-600'
+                  const statusBg    = isCancelled ? 'bg-rose-50' : 'bg-emerald-50'
+                  const statusDot   = isCancelled ? 'bg-rose-400' : 'bg-emerald-400'
                   const time = new Date(new Date(order.created_at).getTime() + 7*3600*1000)
                     .toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' })
                   return (
