@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 
+const PREDEFINED_UNITS = ['kg', 'bó', 'hộp', 'cành', 'chậu', 'quả', 'túi', 'cái', 'gói']
+
 type FormState = {
   name: string
   price: string
@@ -50,6 +52,41 @@ export default function ProductFormModal({
 }: ProductFormModalProps) {
   const [isSubDropdownOpen, setIsSubDropdownOpen] = useState(false)
   const subDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Quản lý giá trị đơn vị tính dạng combobox
+  const [unitSelectVal, setUnitSelectVal] = useState<string>('')
+  const [customUnitVal, setCustomUnitVal] = useState<string>('')
+
+  // Đồng bộ hóa khi form.unit thay đổi
+  useEffect(() => {
+    const currentUnit = form.unit ? form.unit.trim().toLowerCase() : ''
+    if (currentUnit === '') {
+      setUnitSelectVal('')
+      setCustomUnitVal('')
+    } else if (PREDEFINED_UNITS.includes(currentUnit)) {
+      setUnitSelectVal(currentUnit)
+      setCustomUnitVal('')
+    } else {
+      setUnitSelectVal('custom')
+      setCustomUnitVal(form.unit)
+    }
+  }, [form.unit])
+
+  const handleUnitSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value
+    setUnitSelectVal(val)
+    if (val === 'custom') {
+      setForm(prev => ({ ...prev, unit: customUnitVal || 'mới' }))
+    } else {
+      setForm(prev => ({ ...prev, unit: val }))
+    }
+  }
+
+  const handleCustomUnitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setCustomUnitVal(val)
+    setForm(prev => ({ ...prev, unit: val }))
+  }
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -157,17 +194,34 @@ export default function ProductFormModal({
                 <option value="limited">Giới hạn số lượng</option>
               </select>
             </div>
-            <div>
+             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
-                Đơn vị tính (kg, bó, hộp...)
+                Đơn vị tính <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                placeholder="Ví dụ: kg, bó, hộp... (tự nhận diện nếu trống)"
-                value={form.unit}
-                onChange={e => setForm({ ...form, unit: e.target.value })}
-                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200"
-              />
+              <select
+                value={unitSelectVal}
+                onChange={handleUnitSelectChange}
+                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200 cursor-pointer font-medium"
+              >
+                <option value="">-- Chọn đơn vị --</option>
+                {PREDEFINED_UNITS.map(u => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
+                <option value="custom">✍️ Tự nhập đơn vị khác...</option>
+              </select>
+
+              {/* Ô nhập đơn vị tùy chỉnh nếu chọn custom */}
+              {unitSelectVal === 'custom' && (
+                <input
+                  type="text"
+                  placeholder="Nhập đơn vị mới (ví dụ: khay, túi...)"
+                  value={customUnitVal}
+                  onChange={handleCustomUnitChange}
+                  className="w-full mt-2 bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200"
+                />
+              )}
             </div>
           </div>
 
