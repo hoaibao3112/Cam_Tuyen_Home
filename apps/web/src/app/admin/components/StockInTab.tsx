@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react'
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { getProductUnit } from '@/lib/product-helper'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -44,6 +44,119 @@ type ImportHistoryEntry = {
 
 const HISTORY_KEY = 'stockin_history'
 const MAX_HISTORY = 5
+
+// ─── Searchable Product Selector Component ───────────────────────────────────
+
+function SearchableProductSelect({
+  items,
+  value,
+  onChange,
+}: {
+  items: MenuItem[]
+  value: string
+  onChange: (value: string) => void
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Tìm sản phẩm đang được chọn
+  const selectedItem = items.find((item) => item.id === value)
+
+  // Lọc sản phẩm theo từ khoá tìm kiếm
+  const filteredItems = useMemo(() => {
+    if (!searchQuery.trim()) return items
+    if (selectedItem && searchQuery.trim() === selectedItem.name) return items
+    const q = searchQuery.toLowerCase()
+    return items.filter((item) => item.name.toLowerCase().includes(q))
+  }, [items, searchQuery, selectedItem])
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  // Đồng bộ ô tìm kiếm khi giá trị sản phẩm được chọn thay đổi
+  useEffect(() => {
+    if (selectedItem) {
+      setSearchQuery(selectedItem.name)
+    } else {
+      setSearchQuery('')
+    }
+  }, [selectedItem])
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <div className="relative">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value)
+            setIsOpen(true)
+            if (!e.target.value) {
+              onChange('')
+            }
+          }}
+          onFocus={(e) => {
+            setIsOpen(true)
+            e.target.select() // Tự động bôi đen để tiện gõ đè
+          }}
+          placeholder="Tìm sản phẩm..."
+          className="w-full bg-white border border-slate-200 rounded-xl pl-3 pr-8 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 font-semibold"
+        />
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+        >
+          <svg className="size-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-[999] py-1">
+          {filteredItems.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-slate-400">Không tìm thấy sản phẩm</div>
+          ) : (
+            filteredItems.map((item) => {
+              const currentStockText = item.track_stock
+                ? `(Kho: ${item.stock ?? 0} ${getProductUnit(item.category, item.unit)})`
+                : '(Vô hạn)'
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(item.id)
+                    setSearchQuery(item.name)
+                    setIsOpen(false)
+                  }}
+                  className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 transition-colors flex items-center justify-between cursor-pointer ${
+                    item.id === value ? 'bg-blue-50/50 font-bold text-blue-600' : 'text-slate-700'
+                  }`}
+                >
+                  <span className="truncate">{item.name}</span>
+                  <span className="text-[10px] text-slate-400 font-normal shrink-0 ml-2">{currentStockText}</span>
+                </button>
+              )
+            })
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -267,18 +380,11 @@ export default function StockInTab({ shopSlug, items, onUpdated }: StockInTabPro
                       {/* Product select */}
                       <div className="flex-1 min-w-0">
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1 block">Sản phẩm</label>
-                        <select
+                        <SearchableProductSelect
+                          items={sortedItems}
                           value={row.itemId}
-                          onChange={e => updateRow(index, 'itemId', e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
-                        >
-                          <option value="">-- Chọn --</option>
-                          {sortedItems.map(item => (
-                            <option key={item.id} value={item.id}>
-                              {item.name} {item.track_stock ? `(Kho: ${item.stock ?? 0} ${getProductUnit(item.category, item.unit)})` : '(Vô hạn)'}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={val => updateRow(index, 'itemId', val)}
+                        />
                         {currentStock !== null && product && (
                           <p className="text-[10px] text-slate-400 mt-0.5 ml-1">
                             Tồn: <span className="font-bold text-slate-600">{currentStock} {getProductUnit(product.category, product.unit)}</span>
