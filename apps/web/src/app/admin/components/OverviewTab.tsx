@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 
@@ -225,45 +225,47 @@ export default function OverviewTab({ shopSlug }: OverviewTabProps) {
             </div>
           </div>
 
-          <div className="h-52 flex items-end gap-1 sm:gap-1.5 px-1 select-none">
-            {tab === 'daily'
-              ? dailyData.map((item, i) => {
-                  const h = Math.max((item.revenue / dailyMax) * 100, item.revenue > 0 ? 4 : 0.5)
-                  const showLabel = i % 5 === 0 || i === dailyData.length - 1
-                  return (
-                    <div key={item.date} className="flex-1 flex flex-col items-center gap-1 group relative">
-                      <div className="absolute bottom-full mb-1.5 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 whitespace-nowrap z-10 shadow-md">
-                        <p className="text-slate-300">{item.label}</p>
-                        <p className="text-sky-300 font-black">{fmt(item.revenue)}</p>
-                        <p className="text-slate-400">{item.ordersCount} đơn</p>
+          <div className="overflow-x-auto pb-2 pt-10 scrollbar-thin">
+            <div className="h-44 flex items-end gap-1 sm:gap-1.5 px-1 select-none min-w-[600px] sm:min-w-0">
+              {tab === 'daily'
+                ? dailyData.map((item, i) => {
+                    const h = Math.max((item.revenue / dailyMax) * 100, item.revenue > 0 ? 4 : 0.5)
+                    const showLabel = i % 5 === 0 || i === dailyData.length - 1
+                    return (
+                      <div key={item.date} className="flex-1 flex flex-col items-center gap-1 group relative">
+                        <div className="absolute bottom-full mb-1.5 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 whitespace-nowrap z-10 shadow-md">
+                          <p className="text-slate-300">{item.label}</p>
+                          <p className="text-sky-300 font-black">{fmt(item.revenue)}</p>
+                          <p className="text-slate-400">{item.ordersCount} đơn</p>
+                        </div>
+                        <div style={{ height: `${h}%` }}
+                          className={`w-full rounded-t-md transition-all duration-200 cursor-pointer ${
+                            item.revenue > 0 ? 'bg-sky-400 hover:bg-sky-500' : 'bg-slate-100'
+                          }`} />
+                        {showLabel && <span className="text-[8px] text-slate-300 font-bold">{item.label}</span>}
                       </div>
-                      <div style={{ height: `${h}%` }}
-                        className={`w-full rounded-t-md transition-all duration-200 cursor-pointer ${
-                          item.revenue > 0 ? 'bg-sky-400 hover:bg-sky-500' : 'bg-slate-100'
-                        }`} />
-                      {showLabel && <span className="text-[8px] text-slate-300 font-bold">{item.label}</span>}
-                    </div>
-                  )
-                })
-              : chartData.map(item => {
-                  const h = Math.max((item.revenue / monthlyMax) * 100, item.revenue > 0 ? 4 : 0.5)
-                  return (
-                    <div key={item.month} className="flex-1 flex flex-col items-center gap-1 group relative">
-                      <div className="absolute bottom-full mb-1.5 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 whitespace-nowrap z-10 shadow-md">
-                        <p className="text-slate-300">Tháng {item.month}</p>
-                        <p className="text-sky-300 font-black">{fmt(item.revenue)}</p>
-                        <p className="text-slate-400">{item.ordersCount} đơn</p>
+                    )
+                  })
+                : chartData.map(item => {
+                    const h = Math.max((item.revenue / monthlyMax) * 100, item.revenue > 0 ? 4 : 0.5)
+                    return (
+                      <div key={item.month} className="flex-1 flex flex-col items-center gap-1 group relative">
+                        <div className="absolute bottom-full mb-1.5 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 whitespace-nowrap z-10 shadow-md">
+                          <p className="text-slate-300">Tháng {item.month}</p>
+                          <p className="text-sky-300 font-black">{fmt(item.revenue)}</p>
+                          <p className="text-slate-400">{item.ordersCount} đơn</p>
+                        </div>
+                        <div style={{ height: `${h}%` }}
+                          className={`w-full rounded-t-md transition-all duration-200 cursor-pointer ${
+                            item.month === month && item.revenue > 0 ? 'bg-blue-500 hover:bg-blue-600'
+                            : item.revenue > 0 ? 'bg-sky-300 hover:bg-sky-400' : 'bg-slate-100'
+                          }`} />
+                        <span className="text-[10px] text-slate-400 font-bold">{item.month}</span>
                       </div>
-                      <div style={{ height: `${h}%` }}
-                        className={`w-full rounded-t-md transition-all duration-200 cursor-pointer ${
-                          item.month === month && item.revenue > 0 ? 'bg-blue-500 hover:bg-blue-600'
-                          : item.revenue > 0 ? 'bg-sky-300 hover:bg-sky-400' : 'bg-slate-100'
-                        }`} />
-                      <span className="text-[10px] text-slate-400 font-bold">{item.month}</span>
-                    </div>
-                  )
-                })
-            }
+                    )
+                  })
+              }
+            </div>
           </div>
         </div>
 
