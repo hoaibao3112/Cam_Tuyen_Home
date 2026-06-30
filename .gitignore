@@ -41,6 +41,10 @@ Thumbs.db
 
 # Image backups
 apps/web/public/images/_backup/
+apps/web/public/product-images/_backup/
+product-images/_backup/
+**/_backup/
 
 # Scratch folder
 scratch/
+
