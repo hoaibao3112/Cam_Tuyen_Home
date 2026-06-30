@@ -20,31 +20,7 @@ export function getSupabaseImageUrl(
   } = {}
 ): string {
   if (!url) return ''
-
-  const { width = 800, quality = 80, format = 'origin' } = options
-
-  try {
-    // Chỉ transform URL từ Supabase Storage
-    if (!url.includes('supabase.co/storage/v1/object/public/')) {
-      return url
-    }
-
-    // Đổi /object/public/ → /render/v1/object/public/
-    const transformed = url.replace(
-      '/storage/v1/object/public/',
-      '/storage/v1/render/v1/object/public/'
-    )
-
-    const parsed = new URL(transformed)
-    parsed.searchParams.set('width', String(width))
-    parsed.searchParams.set('quality', String(quality))
-    if (format !== 'origin') {
-      parsed.searchParams.set('format', format)
-    }
-    return parsed.toString()
-  } catch {
-    return url
-  }
+  return url
 }
 
 /**

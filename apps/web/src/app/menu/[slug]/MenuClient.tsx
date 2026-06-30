@@ -682,19 +682,13 @@ export default function MenuClient({
 
             <div className="flex-1 overflow-y-auto pb-6">
               <div className="relative w-full aspect-[4/3] max-h-[360px] bg-[#F5F0E8] overflow-hidden shrink-0">
-                {/* Shimmer skeleton hiện trong khi ảnh đang tải */}
-                {!modalImageLoaded && selectedItem.image_url && (
-                  <div className="absolute inset-0 z-10 animate-shimmer" />
-                )}
                 {selectedItem.image_url ? (
                   <Image
                     src={getModalImageUrl(selectedItem.image_url)}
                     alt={selectedItem.name}
                     fill
                     sizes="(max-width: 640px) 100vw, 480px"
-                    className={`object-cover transition-opacity duration-500 ${
-                      modalImageLoaded ? 'opacity-100' : 'opacity-0'
-                    }`}
+                    className="object-cover"
                     placeholder="blur"
                     blurDataURL={BLUR_DATA_URL}
                     quality={85}
