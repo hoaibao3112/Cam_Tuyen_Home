@@ -338,40 +338,47 @@ export default function OverviewTab({ shopSlug }: OverviewTabProps) {
             <>
               {/* Stacked bar */}
               <div className="flex h-3 rounded-full overflow-hidden mb-4 gap-0.5">
-                {(['pending','confirmed','done','cancelled'] as const).map(s => {
-                  const count = orderStatus.counts[s] || 0
-                  const rate  = +((count / (orderStatus.total || 1)) * 100).toFixed(1)
-                  if (!rate) return null
-                  const bgs: Record<string,string> = {
-                    pending:'bg-amber-400', confirmed:'bg-blue-400',
-                    done:'bg-emerald-400', cancelled:'bg-rose-400'
-                  }
+                {(() => {
+                  const doneCount = (orderStatus.counts.pending || 0) + (orderStatus.counts.confirmed || 0) + (orderStatus.counts.done || 0)
+                  const cancelledCount = orderStatus.counts.cancelled || 0
+                  const total = orderStatus.total || 1
+                  const doneRate = +((doneCount / total) * 100).toFixed(1)
+                  const cancelledRate = +((cancelledCount / total) * 100).toFixed(1)
                   return (
-                    <div key={s} style={{ width:`${rate}%` }}
-                      className={`${bgs[s]} rounded-full`} />
+                    <>
+                      {doneRate > 0 && <div style={{ width: `${doneRate}%` }} className="bg-emerald-400 transition-all" />}
+                      {cancelledRate > 0 && <div style={{ width: `${cancelledRate}%` }} className="bg-rose-400 transition-all" />}
+                    </>
                   )
-                })}
+                })()}
               </div>
 
               {/* Per-status rows */}
               <div className="space-y-2 flex-1">
-                {([
-                  { key:'done',      label:'✅ Hoàn thành',    dot:'bg-emerald-400', bg:'bg-emerald-50', color:'text-emerald-700' },
-                  { key:'confirmed', label:'🔵 Đã xác nhận',   dot:'bg-blue-400',    bg:'bg-blue-50',    color:'text-blue-700'    },
-                  { key:'pending',   label:'⏳ Chờ xử lý',     dot:'bg-amber-400',   bg:'bg-amber-50',   color:'text-amber-700'   },
-                  { key:'cancelled', label:'❌ Boom đơn / Hủy', dot:'bg-rose-400',   bg:'bg-rose-50',    color:'text-rose-700'    },
-                ] as const).map(meta => {
-                  const count = orderStatus.counts[meta.key as keyof typeof orderStatus.counts] || 0
-                  const rate  = +((count / (orderStatus.total || 1)) * 100).toFixed(1)
+                {(() => {
+                  const doneCount = (orderStatus.counts.pending || 0) + (orderStatus.counts.confirmed || 0) + (orderStatus.counts.done || 0)
+                  const cancelledCount = orderStatus.counts.cancelled || 0
+                  const total = orderStatus.total || 1
+                  const doneRate = +((doneCount / total) * 100).toFixed(1)
+                  const cancelledRate = +((cancelledCount / total) * 100).toFixed(1)
+                  
                   return (
-                    <div key={meta.key} className={`flex items-center gap-2 px-2.5 py-2 rounded-xl ${meta.bg}`}>
-                      <span className={`size-2.5 rounded-full flex-shrink-0 ${meta.dot}`} />
-                      <span className={`text-[11px] font-semibold flex-1 ${meta.color}`}>{meta.label}</span>
-                      <span className="text-[12px] font-black text-slate-800">{count}</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white/60 ${meta.color}`}>{rate}%</span>
-                    </div>
+                    <>
+                      <div className="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-emerald-50">
+                        <span className="size-2.5 rounded-full flex-shrink-0 bg-emerald-400" />
+                        <span className="text-[11px] font-semibold flex-1 text-emerald-700">✅ Hoàn thành</span>
+                        <span className="text-[12px] font-black text-slate-800">{doneCount}</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white/60 text-emerald-700">{doneRate}%</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-rose-50">
+                        <span className="size-2.5 rounded-full flex-shrink-0 bg-rose-400" />
+                        <span className="text-[11px] font-semibold flex-1 text-rose-700">❌ Bơm hàng / Hủy</span>
+                        <span className="text-[12px] font-black text-slate-800">{cancelledCount}</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white/60 text-rose-700">{cancelledRate}%</span>
+                      </div>
+                    </>
                   )
-                })}
+                })()}
               </div>
 
               {orderStatus.cancelledRevenueLost > 0 && (
