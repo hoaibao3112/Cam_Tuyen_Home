@@ -187,7 +187,7 @@ export default function ProductFormModal({
                   setForm({
                     ...form,
                     track_stock: isLimited,
-                    stock: isLimited && (form.stock === '0' || !form.stock) ? '10' : form.stock
+                    stock: form.stock || '0'
                   })
                 }}
                 className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-[#2D1810] focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200 cursor-pointer font-bold"
