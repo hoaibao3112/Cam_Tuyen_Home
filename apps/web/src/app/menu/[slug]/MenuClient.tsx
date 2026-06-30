@@ -240,6 +240,7 @@ export default function MenuClient({
                 fill
                 className="object-cover rounded-full"
                 priority
+                unoptimized
               />
             </div>
             <div className="text-center mt-0.5">
@@ -578,31 +579,49 @@ export default function MenuClient({
             </ul>
           </div>
 
-          {/* Kết nối Fanpage */}
+          {/* Kết nối Fanpage & Zalo */}
           <div>
-            <p className="font-bold text-sm uppercase tracking-widest text-[#C4A882] mb-4">Kết Nối Fanpage</p>
-            <a
-              href="https://www.facebook.com/camtuyen.nguyenthi.187"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block bg-white p-2 rounded-xl hover:opacity-90 transition-opacity shadow-md"
-            >
-              <Image
-                src="/QRTrang.png"
-                alt="Facebook QR Code"
-                width={112}
-                height={112}
-                className="w-28 h-28 object-contain"
-              />
-            </a>
-            <p className="text-xs text-[#C4A882] mt-2">
-              Quét mã để truy cập Facebook Page
+            <p className="font-bold text-sm uppercase tracking-widest text-[#C4A882] mb-4">Kết Nối Với Chúng Tôi</p>
+            <div className="flex gap-4 flex-wrap justify-start">
+              <div className="flex flex-col items-center">
+                <a
+                  href="https://www.facebook.com/camtuyen.nguyenthi.187"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-white p-1.5 rounded-xl hover:opacity-90 transition-all duration-200 hover:scale-105 shadow-md"
+                >
+                  <img
+                    src="/QRTrang.png"
+                    alt="Facebook QR Code"
+                    className="w-24 h-24 object-contain"
+                  />
+                </a>
+                <p className="text-[11px] text-[#C4A882] mt-1.5 font-semibold">Facebook</p>
+              </div>
+              <div className="flex flex-col items-center">
+                <a
+                  href="https://zalo.me/0375023839"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-white p-1.5 rounded-xl hover:opacity-90 transition-all duration-200 hover:scale-105 shadow-md"
+                >
+                  <img
+                    src="/qrcode-url.png"
+                    alt="Zalo QR Code"
+                    className="w-24 h-24 object-contain"
+                  />
+                </a>
+                <p className="text-[11px] text-[#C4A882] mt-1.5 font-semibold">Zalo</p>
+              </div>
+            </div>
+            <p className="text-xs text-[#C4A882]/70 mt-3 leading-relaxed">
+              Quét mã QR để liên hệ hoặc đặt hàng qua Facebook / Zalo
             </p>
           </div>
         </div>
 
         <div className="border-t border-[#4A2D20] py-4 text-center text-[#8B6B55] text-xs">
-          © 2024 Cẩm Tuyền House&apos;s. Chính Tươi – Sống Khoẻ – Yêu Thương.
+          © Cẩm Tuyền House&apos;s. Chính Tươi – Sống Khoẻ – Yêu Thương.
         </div>
       </footer>
 
