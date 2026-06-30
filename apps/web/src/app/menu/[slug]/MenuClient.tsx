@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
@@ -6,6 +6,20 @@ import { MenuItem } from './page'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase-client'
 import { getProductUnit } from '@/lib/product-helper'
+import { getCardImageUrl, getModalImageUrl, BLUR_DATA_URL } from '@/lib/image-helper'
+
+// Helper: trả về stagger class dựa theo index (tối đa 12 mức)
+function getStaggerClass(index: number): string {
+  const n = Math.min(index + 1, 12)
+  return `stagger-${n}`
+}
+
+// Preload ảnh vào browser cache trước khi modal mở
+function preloadImage(url: string) {
+  if (typeof window === 'undefined') return
+  const img = new window.Image()
+  img.src = url
+}
 
 // Lazy-load OrderPanel: chi can khi khach mo gio hang, khong nen nam trong bundle ban dau
 const OrderPanel = dynamic(() => import('./OrderPanel'), { ssr: false })
@@ -50,6 +64,10 @@ export default function MenuClient({
   const [activeSubCategory, setActiveSubCategory] = useState<string>('all')
   const [showOrderPanel, setShowOrderPanel] = useState(false)
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
+  // Key dùng để re-trigger stagger animation mỗi khi đổi category/subcategory
+  const [gridAnimKey, setGridAnimKey] = useState(0)
+  // Track trạng thái load ảnh trong modal
+  const [modalImageLoaded, setModalImageLoaded] = useState(false)
 
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -102,6 +120,11 @@ export default function MenuClient({
       setActiveCategory(categories[0])
     }
   }, [categories, activeCategory])
+
+  // Reset loading state mỗi khi mở modal sản phẩm khác
+  useEffect(() => {
+    setModalImageLoaded(false)
+  }, [selectedItem?.id])
 
   const subCategories = useMemo(() => {
     const subs = items
@@ -267,8 +290,9 @@ export default function MenuClient({
               onClick={() => {
                 setActiveCategory(cat)
                 setActiveSubCategory('all')
+                setGridAnimKey(k => k + 1)
               }}
-              className={`shrink-0 px-3 sm:px-5 py-3 text-[11px] sm:text-sm font-bold transition-all duration-200 border-b-2 whitespace-nowrap ${
+              className={`shrink-0 px-3 sm:px-5 py-3 text-[11px] sm:text-sm font-bold transition-all duration-250 border-b-2 whitespace-nowrap ${
                 activeCategory === cat
                   ? 'border-[#2D5A27] text-[#2D5A27]'
                   : 'border-transparent text-[#6B5E4E] hover:text-[#2D5A27] hover:border-[#2D5A27]/30'
@@ -283,11 +307,11 @@ export default function MenuClient({
         {subCategories.length > 0 && (
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-none px-4 sm:px-8 py-2.5 bg-[#F5F0E8] border-t border-[#E8E0D0]">
             <button
-              onClick={() => setActiveSubCategory('all')}
-              className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all ${
+              onClick={() => { setActiveSubCategory('all'); setGridAnimKey(k => k + 1) }}
+              className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all duration-200 ${
                 activeSubCategory === 'all'
-                  ? 'bg-[#2D5A27] text-white'
-                  : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0]'
+                  ? 'bg-[#2D5A27] text-white scale-[1.04] shadow-sm'
+                  : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0] hover:scale-[1.02]'
               }`}
             >
               Tất cả
@@ -295,11 +319,11 @@ export default function MenuClient({
             {subCategories.map((sub) => (
               <button
                 key={sub}
-                onClick={() => setActiveSubCategory(sub)}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all ${
+                onClick={() => { setActiveSubCategory(sub); setGridAnimKey(k => k + 1) }}
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all duration-200 ${
                   activeSubCategory === sub
-                    ? 'bg-[#2D5A27] text-white'
-                    : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0]'
+                    ? 'bg-[#2D5A27] text-white scale-[1.04] shadow-sm'
+                    : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0] hover:scale-[1.02]'
                 }`}
               >
                 {sub}
@@ -307,11 +331,11 @@ export default function MenuClient({
             ))}
             {hasNullSubCategory && (
               <button
-                onClick={() => setActiveSubCategory('other')}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all ${
+                onClick={() => { setActiveSubCategory('other'); setGridAnimKey(k => k + 1) }}
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all duration-200 ${
                   activeSubCategory === 'other'
-                    ? 'bg-[#2D5A27] text-white'
-                    : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0]'
+                    ? 'bg-[#2D5A27] text-white scale-[1.04] shadow-sm'
+                    : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0] hover:scale-[1.02]'
                 }`}
               >
                 Khác
@@ -389,7 +413,7 @@ export default function MenuClient({
 
           {/* Product grid */}
           <div className="px-3 sm:px-8 pb-10">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
+            <div key={gridAnimKey} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
               {filtered.map((item, index) => {
                 const qty = getQty(item.id)
                 const badge = CATEGORY_BADGE[item.category]
@@ -399,18 +423,23 @@ export default function MenuClient({
                   <div
                     key={item.id}
                     onClick={() => setSelectedItem(item)}
-                    className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-[#EDE8E0] hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-300 flex flex-col cursor-pointer group"
+                    onMouseEnter={() => { if (item.image_url) preloadImage(item.image_url) }}
+                    onTouchStart={() => { if (item.image_url) preloadImage(item.image_url) }}
+                    className={`animate-fade-in-up ${getStaggerClass(index)} bg-white rounded-2xl overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-[#EDE8E0] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 flex flex-col cursor-pointer group`}
                   >
                     {/* Image */}
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#F5F0E8]">
                       {item.image_url ? (
                         <Image
-                          src={item.image_url}
+                          src={getCardImageUrl(item.image_url)}
                           alt={item.name}
                           fill
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
-                          priority={index < 8}
+                          placeholder="blur"
+                          blurDataURL={BLUR_DATA_URL}
+                          quality={75}
+                          priority={index < 6}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-3xl bg-[#F5F0E8] select-none">
@@ -459,22 +488,22 @@ export default function MenuClient({
                         ) : qty === 0 ? (
                           <button
                             onClick={(e) => { e.stopPropagation(); addToCart(item) }}
-                            className="w-full h-8 sm:h-9 bg-[#2D5A27] hover:bg-[#1E3D1A] text-white text-[11px] sm:text-xs font-bold rounded-xl active:scale-[0.95] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                            className="w-full h-8 sm:h-9 bg-[#2D5A27] hover:bg-[#1E3D1A] text-white text-[11px] sm:text-xs font-bold rounded-xl active:scale-[0.92] transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md"
                           >
-                            <span className="text-sm">+</span> Chọn
+                            <span className="text-sm leading-none">+</span> Chọn
                           </button>
                         ) : (
                           <div className="flex items-center justify-between bg-[#F0EAE0] border border-[#D4C4A8] rounded-xl overflow-hidden h-8 sm:h-9">
                             <button
                               onClick={(e) => { e.stopPropagation(); removeFromCart(item.id) }}
-                              className="w-8 sm:w-10 h-full text-[#2D5A27] font-bold hover:bg-[#E8DDD0] transition-colors cursor-pointer flex items-center justify-center text-base"
+                              className="w-8 sm:w-10 h-full text-[#2D5A27] font-bold hover:bg-[#E8DDD0] active:bg-[#D4C4A8] transition-colors cursor-pointer flex items-center justify-center text-base"
                             >
                               −
                             </button>
-                            <span className="text-[#2D1810] font-extrabold text-xs sm:text-sm">{qty}</span>
+                            <span key={qty} className="animate-qty-pop text-[#2D1810] font-extrabold text-xs sm:text-sm">{qty}</span>
                             <button
                               onClick={(e) => { e.stopPropagation(); addToCart(item) }}
-                              className="w-8 sm:w-10 h-full text-[#2D5A27] font-bold hover:bg-[#E8DDD0] transition-colors cursor-pointer flex items-center justify-center text-base"
+                              className="w-8 sm:w-10 h-full text-[#2D5A27] font-bold hover:bg-[#E8DDD0] active:bg-[#D4C4A8] transition-colors cursor-pointer flex items-center justify-center text-base"
                             >
                               +
                             </button>
@@ -583,14 +612,14 @@ export default function MenuClient({
 
       {/* ===== MOBILE: Sticky bottom bar ===== */}
       {totalQty > 0 && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-[#FAFAF7]/90 backdrop-blur-md border-t border-[#E8E0D0] z-40">
-          <div className="h-14 bg-[#2D5A27] text-white rounded-2xl flex items-center justify-between px-4 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]">
+        <div className="animate-slide-up lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-[#FAFAF7]/90 backdrop-blur-md border-t border-[#E8E0D0] z-40">
+          <div className="h-14 bg-[#2D5A27] text-white rounded-2xl flex items-center justify-between px-4 shadow-[0_-4px_24px_rgba(45,90,39,0.35)]">
             <div className="flex items-center gap-2.5">
               <div className="relative">
                 <svg className="size-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                <span className="absolute -top-1.5 -right-1.5 bg-[#C4A882] text-[#2D1810] text-[9px] font-black size-4 rounded-full flex items-center justify-center">
+                <span key={totalQty} className="animate-qty-pop absolute -top-1.5 -right-1.5 bg-[#C4A882] text-[#2D1810] text-[9px] font-black size-4 rounded-full flex items-center justify-center">
                   {totalQty}
                 </span>
               </div>
@@ -599,7 +628,7 @@ export default function MenuClient({
 
             <button
               onClick={() => setShowOrderPanel(true)}
-              className="bg-white text-[#2D5A27] hover:bg-[#F0EAE0] px-4 py-1.5 rounded-xl font-bold text-xs transition-all duration-300 active:scale-[0.96] cursor-pointer"
+              className="bg-white text-[#2D5A27] hover:bg-[#F0EAE0] px-4 py-1.5 rounded-xl font-bold text-xs transition-all duration-200 active:scale-[0.94] cursor-pointer"
             >
               Xem đơn hàng
             </button>
@@ -613,8 +642,8 @@ export default function MenuClient({
 
       {/* ===== MOBILE: Order panel bottom sheet ===== */}
       {showOrderPanel && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex flex-col justify-end">
-          <div className="bg-[#FAFAF7] rounded-t-[2rem] max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="animate-fade-in lg:hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex flex-col justify-end">
+          <div className="animate-slide-in-bottom bg-[#FAFAF7] rounded-t-[2rem] max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
             <div className="flex-1 overflow-y-auto">
               <OrderPanel
                 cart={cart}
@@ -632,11 +661,11 @@ export default function MenuClient({
       {/* ===== PRODUCT DETAIL MODAL ===== */}
       {selectedItem && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4"
+          className="animate-fade-in fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4"
           onClick={() => setSelectedItem(null)}
         >
           <div
-            className="w-full sm:max-w-[480px] bg-white rounded-t-[2rem] sm:rounded-2xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 relative"
+            className="animate-slide-in-bottom sm:[animation:fadeInUp_0.3s_ease_both] w-full sm:max-w-[480px] bg-white rounded-t-[2rem] sm:rounded-2xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[85vh] overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mx-auto my-3 w-12 h-1 rounded-full bg-[#D4C4A8] sm:hidden shrink-0" />
@@ -653,14 +682,24 @@ export default function MenuClient({
 
             <div className="flex-1 overflow-y-auto pb-6">
               <div className="relative w-full aspect-[4/3] max-h-[360px] bg-[#F5F0E8] overflow-hidden shrink-0">
+                {/* Shimmer skeleton hiện trong khi ảnh đang tải */}
+                {!modalImageLoaded && selectedItem.image_url && (
+                  <div className="absolute inset-0 z-10 animate-shimmer" />
+                )}
                 {selectedItem.image_url ? (
                   <Image
-                    src={selectedItem.image_url}
+                    src={getModalImageUrl(selectedItem.image_url)}
                     alt={selectedItem.name}
                     fill
                     sizes="(max-width: 640px) 100vw, 480px"
-                    className="object-cover"
+                    className={`object-cover transition-opacity duration-500 ${
+                      modalImageLoaded ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    placeholder="blur"
+                    blurDataURL={BLUR_DATA_URL}
+                    quality={85}
                     priority
+                    onLoad={() => setModalImageLoaded(true)}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-5xl select-none">🌿</div>

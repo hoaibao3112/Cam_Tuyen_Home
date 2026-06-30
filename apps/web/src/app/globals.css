@@ -20,3 +20,101 @@ body {
   scrollbar-width: none;  /* Firefox */
 }
 
+/* ===== MENU PAGE ANIMATIONS ===== */
+
+/* Fade-in + slide-up: dùng cho product cards */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide-up: mobile cart sticky bar */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade-in: header, modal backdrop */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Quantity pop: nảy nhẹ khi thêm/bớt sản phẩm */
+@keyframes qtyPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35); }
+  70%  { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+/* Slide-in từ bottom: mobile bottom sheet */
+@keyframes slideInBottom {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* Utility classes */
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease both;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease both;
+}
+
+.animate-qty-pop {
+  animation: qtyPop 0.3s ease;
+}
+
+.animate-slide-in-bottom {
+  animation: slideInBottom 0.4s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* Stagger delay classes cho product grid (tối đa 12 items hiệu ứng) */
+.stagger-1  { animation-delay: 0ms; }
+.stagger-2  { animation-delay: 40ms; }
+.stagger-3  { animation-delay: 80ms; }
+.stagger-4  { animation-delay: 120ms; }
+.stagger-5  { animation-delay: 160ms; }
+.stagger-6  { animation-delay: 200ms; }
+.stagger-7  { animation-delay: 240ms; }
+.stagger-8  { animation-delay: 280ms; }
+.stagger-9  { animation-delay: 320ms; }
+.stagger-10 { animation-delay: 360ms; }
+.stagger-11 { animation-delay: 400ms; }
+.stagger-12 { animation-delay: 440ms; }
+
+/* Shimmer skeleton — dùng cho ảnh đang tải */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    #EDE8E0 25%,
+    #F8F4EE 50%,
+    #EDE8E0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+

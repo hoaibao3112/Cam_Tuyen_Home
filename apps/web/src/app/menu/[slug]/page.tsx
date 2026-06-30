@@ -17,16 +17,33 @@ export interface MenuItem {
 }
 
 async function getMenuItems(slug: string): Promise<MenuItem[]> {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/menu/${slug}`,
-      { next: { revalidate: 300, tags: ['menu', `menu-${slug}`] } }
-    )
-    if (!res.ok) return []
-    return res.json()
-  } catch {
-    return []
+  const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/menu/${slug}`
+
+  // Hàm fetch với timeout — tránh treo lâu khi Render cold start
+  const fetchWithTimeout = async (ms: number): Promise<MenuItem[]> => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), ms)
+    try {
+      const res = await fetch(apiUrl, {
+        signal: controller.signal,
+        next: { revalidate: 60, tags: ['menu', `menu-${slug}`] },
+      })
+      if (!res.ok) return []
+      return res.json()
+    } catch {
+      return []
+    } finally {
+      clearTimeout(timer)
+    }
   }
+
+  // Lần 1: timeout 4s — Render đã warm
+  const items = await fetchWithTimeout(4000)
+  if (items.length > 0) return items
+
+  // Lần 2: retry sau 3s — Render đang cold start, chờ boot xong
+  await new Promise((r) => setTimeout(r, 3000))
+  return fetchWithTimeout(8000)
 }
 
 export async function generateStaticParams() {
