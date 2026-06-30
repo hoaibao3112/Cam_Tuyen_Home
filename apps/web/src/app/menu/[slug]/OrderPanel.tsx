@@ -223,8 +223,8 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
   // ===== BƯỚC 1: GIỎ HÀNG + FORM THÔNG TIN =====
   if (step === 'cart') {
     return (
-      <div className="flex flex-col h-full bg-[#FAFAF7] text-slate-800">
-        <div className="px-5 py-4 border-b border-orange-100/50 flex items-center justify-between shrink-0">
+      <div className="flex flex-col h-full bg-[#FDFBF7] text-slate-800">
+        <div className="px-5 py-4 border-b border-[#D4C4A8]/40 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-slate-800 font-extrabold text-lg flex items-center gap-2">
               <span>🛒 Đơn hàng của bạn</span>
@@ -255,9 +255,9 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
               {/* Danh sách sản phẩm đã chọn */}
               <div className="space-y-3">
                 {cart.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 bg-blue-50/10 p-2 rounded-2xl border border-blue-100/10 hover:border-blue-100/40 transition-colors">
+                  <div key={item.id} className="flex items-center gap-3 bg-[#FAF6EF] p-2.5 rounded-[18px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-transparent hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all">
                     {item.image_url && (
-                      <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border border-blue-100/20">
+                      <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border border-[#EDE8E0]">
                         <Image
                           src={item.image_url}
                           alt={item.name}
@@ -276,19 +276,19 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                         </span>
                       </p>
                     </div>
-                    <div className="flex items-center gap-0.5 bg-blue-50 border border-blue-200/50 rounded-xl overflow-hidden flex-shrink-0">
+                    <div className="flex items-center gap-0.5 bg-[#F5F0E8] border border-[#D4C4A8]/60 rounded-xl overflow-hidden flex-shrink-0">
                       <button
                         onClick={() => onRemove(item.id)}
-                        className="w-8 h-8 text-blue-950 font-bold hover:bg-blue-100/50 transition-colors cursor-pointer"
+                        className="w-8 h-8 text-[#2D1810] font-bold hover:bg-[#E8E0D0]/50 transition-colors cursor-pointer"
                       >
                         −
                       </button>
-                      <span className="text-blue-950 text-xs font-black w-5 text-center">
+                      <span className="text-[#2D1810] text-xs font-black w-5 text-center">
                         {item.quantity}
                       </span>
                       <button
                         onClick={() => onAdd(item)}
-                        className="w-8 h-8 text-blue-950 font-bold hover:bg-blue-100/50 transition-colors cursor-pointer"
+                        className="w-8 h-8 text-[#2D1810] font-bold hover:bg-[#E8E0D0]/50 transition-colors cursor-pointer"
                       >
                         +
                       </button>
@@ -304,14 +304,14 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                 </h3>
 
                 {/* Nút chọn hình thức nhận hàng */}
-                <div className="flex gap-2 p-1 bg-slate-100 rounded-xl border border-slate-100/30">
+                <div className="flex gap-2 p-1 bg-[#F5F0E8] rounded-xl border border-[#D4C4A8]/30">
                   <button
                     type="button"
                     onClick={() => setDeliveryMethod('ship')}
                     className={`flex-1 py-2 text-xs font-extrabold rounded-lg transition-all active:scale-[0.98] cursor-pointer ${
                       deliveryMethod === 'ship'
-                        ? 'bg-[#F97316] text-white shadow-sm'
-                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                        ? 'bg-[#2D5430] text-white shadow-sm'
+                        : 'bg-white text-[#4A6B45] border border-[#4A6B45] hover:bg-[#FAF6EF]/50'
                     }`}
                   >
                     🛵 Quán đi ship
@@ -321,8 +321,8 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                     onClick={() => setDeliveryMethod('pickup')}
                     className={`flex-1 py-2 text-xs font-extrabold rounded-lg transition-all active:scale-[0.98] cursor-pointer ${
                       deliveryMethod === 'pickup'
-                        ? 'bg-[#F97316] text-white shadow-sm'
-                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                        ? 'bg-[#2D5430] text-white shadow-sm'
+                        : 'bg-white text-[#4A6B45] border border-[#4A6B45] hover:bg-[#FAF6EF]/50'
                     }`}
                   >
                     🏪 Tới quán lấy
@@ -331,7 +331,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
 
                 {/* Input tên */}
                 <div>
-                  <label className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
+                  <label className="text-[#6B5E4E] text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
                     Họ tên *
                   </label>
                   <input
@@ -339,13 +339,13 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Nguyễn Văn A"
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200"
+                    className="w-full bg-[#FDFBF7] border border-[#D4C4A8]/50 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-[#2D5A27] focus:bg-white transition-all duration-200"
                   />
                 </div>
 
                 {/* Input SĐT */}
                 <div>
-                  <label className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
+                  <label className="text-[#6B5E4E] text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
                     Số điện thoại *
                   </label>
                   <input
@@ -353,7 +353,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="0901 234 567"
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200"
+                    className="w-full bg-[#FDFBF7] border border-[#D4C4A8]/50 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-[#2D5A27] focus:bg-white transition-all duration-200"
                   />
                 </div>
 
@@ -361,7 +361,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                   <>
                     {/* Chọn Tỉnh/Thành phố */}
                     <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                      <label className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
+                      <label className="text-[#6B5E4E] text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
                         Tỉnh / Thành phố *
                       </label>
                       <select
@@ -371,7 +371,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                           const selectedOpt = e.target.options[e.target.selectedIndex]
                           handleProvinceChange(id, selectedOpt ? selectedOpt.text : '')
                         }}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200 cursor-pointer"
+                        className="w-full bg-[#FDFBF7] border border-[#D4C4A8]/50 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2D5A27] focus:bg-white transition-all duration-200 cursor-pointer"
                       >
                         <option value="">-- Chọn Tỉnh/Thành phố --</option>
                         {provinces.map((p) => (
@@ -384,7 +384,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
 
                     {/* Chọn Quận/Huyện */}
                     <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                      <label className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
+                      <label className="text-[#6B5E4E] text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
                         Quận / Huyện *
                       </label>
                       <select
@@ -395,7 +395,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                           handleDistrictChange(id, selectedOpt ? selectedOpt.text : '')
                         }}
                         disabled={!provinceId}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        className="w-full bg-[#FDFBF7] border border-[#D4C4A8]/50 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2D5A27] focus:bg-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       >
                         <option value="">-- Chọn Quận/Huyện --</option>
                         {districts.map((d) => (
@@ -408,14 +408,14 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
 
                     {/* Chọn Phường/Xã */}
                     <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                      <label className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
+                      <label className="text-[#6B5E4E] text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
                         Phường / Xã *
                       </label>
                       <select
                         value={ward}
                         onChange={(e) => setWard(e.target.value)}
                         disabled={!districtId}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        className="w-full bg-[#FDFBF7] border border-[#D4C4A8]/50 text-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2D5A27] focus:bg-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       >
                         <option value="">-- Chọn Phường/Xã --</option>
                         {wards.map((w) => (
@@ -428,7 +428,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
 
                     {/* Địa chỉ cụ thể */}
                     <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                      <label className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
+                      <label className="text-[#6B5E4E] text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
                         Địa chỉ cụ thể (Số nhà, tên đường...) *
                       </label>
                       <input
@@ -436,7 +436,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                         value={street}
                         onChange={(e) => setStreet(e.target.value)}
                         placeholder="Ví dụ: 123 Nguyễn Huệ"
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200"
+                        className="w-full bg-[#FDFBF7] border border-[#D4C4A8]/50 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-[#2D5A27] focus:bg-white transition-all duration-200"
                       />
                     </div>
                   </>
@@ -444,7 +444,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
 
                 {/* Ghi chú */}
                 <div>
-                  <label className="text-slate-555 text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
+                  <label className="text-[#6B5E4E] text-[10px] font-extrabold uppercase tracking-wider block mb-1.5">
                     Ghi chú (không bắt buộc)
                   </label>
                   <textarea
@@ -452,7 +452,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                     onChange={(e) => setNote(e.target.value)}
                     placeholder="Ít cay, không hành, dị ứng..."
                     rows={3}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-all duration-200 resize-none"
+                    className="w-full bg-[#FDFBF7] border border-[#D4C4A8]/50 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-[#2D5A27] focus:bg-white transition-all duration-200 resize-none"
                   />
                 </div>
 
@@ -468,9 +468,9 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
 
         {/* Tổng tiền + nút đặt */}
         {cart.length > 0 && (
-          <div className="px-5 py-4 border-t border-slate-100 bg-[#FAFAFA]/50 space-y-3 shrink-0">
+          <div className="px-5 py-4 border-t border-[#D4C4A8]/40 bg-[#FDFBF7] space-y-3 shrink-0">
             <div className="flex justify-between items-center text-xs font-extrabold">
-              <span className="text-slate-400 uppercase tracking-widest">{totalQty} sản phẩm</span>
+              <span className="text-[#6B5E4E] uppercase tracking-widest">{totalQty} sản phẩm</span>
               <span className="text-rose-650 text-xl font-black">
                 {total.toLocaleString('vi-VN')}đ
               </span>
@@ -478,7 +478,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="w-full bg-[#F97316] hover:bg-[#ea580c] disabled:opacity-50 text-white py-3.5 rounded-2xl font-bold text-base transition-all duration-300 shadow-md active:scale-[0.98] cursor-pointer"
+              className="w-full bg-[#2D5430] hover:bg-[#1E3C22] disabled:opacity-50 text-white py-3.5 rounded-2xl font-bold text-base transition-all duration-300 shadow-md active:scale-[0.98] cursor-pointer"
             >
               {loading ? 'Đang gửi đơn...' : `Xác nhận đặt hàng · ${total.toLocaleString('vi-VN')}đ`}
             </button>
@@ -490,7 +490,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
 
   // ===== BƯỚC 2: THÀNH CÔNG =====
   return (
-    <div className="flex flex-col items-center justify-center h-full px-6 text-center gap-5 bg-[#FAFAF7] text-slate-800 py-10 relative">
+    <div className="flex flex-col items-center justify-center h-full px-6 text-center gap-5 bg-[#FDFBF7] text-slate-800 py-10 relative">
       {onClose && (
         <button
           onClick={onClose}

@@ -190,10 +190,10 @@ export default function MenuClient({
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF7] text-slate-800 flex flex-col">
+    <div className="min-h-screen bg-[#E3D9C6] text-slate-800 flex flex-col">
 
       {/* ===== HEADER ===== */}
-      <header className="bg-white border-b border-[#E8E0D0] shadow-sm sticky top-0 z-30">
+      <header className="bg-[#FDFBF7] border-b border-[#E8E0D0]/60 shadow-[0_2px_12px_rgba(0,0,0,0.04)] sticky top-0 z-30">
         {/* Top bar: logo + info */}
         <div className="flex items-center justify-between px-4 sm:px-8 py-3">
           {/* LEFT: Phone & Facebook (Desktop only) */}
@@ -292,11 +292,10 @@ export default function MenuClient({
                 setActiveSubCategory('all')
                 setGridAnimKey(k => k + 1)
               }}
-              className={`shrink-0 px-3 sm:px-5 py-3 text-[11px] sm:text-sm font-bold transition-all duration-250 border-b-2 whitespace-nowrap ${
-                activeCategory === cat
-                  ? 'border-[#2D5A27] text-[#2D5A27]'
-                  : 'border-transparent text-[#6B5E4E] hover:text-[#2D5A27] hover:border-[#2D5A27]/30'
-              }`}
+              className={`shrink-0 px-3 sm:px-5 py-3 text-[11px] sm:text-sm font-bold transition-all duration-250 border-b-2 whitespace-nowrap ${activeCategory === cat
+                ? 'border-[#2D5A27] text-[#2D5A27]'
+                : 'border-transparent text-[#6B5E4E] hover:text-[#2D5A27] hover:border-[#2D5A27]/30'
+                }`}
             >
               {cat}
             </button>
@@ -308,11 +307,10 @@ export default function MenuClient({
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-none px-4 sm:px-8 py-2.5 bg-[#F5F0E8] border-t border-[#E8E0D0]">
             <button
               onClick={() => { setActiveSubCategory('all'); setGridAnimKey(k => k + 1) }}
-              className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all duration-200 ${
-                activeSubCategory === 'all'
-                  ? 'bg-[#2D5A27] text-white scale-[1.04] shadow-sm'
-                  : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0] hover:scale-[1.02]'
-              }`}
+              className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all duration-200 ${activeSubCategory === 'all'
+                ? 'bg-[#2D5A27] text-white scale-[1.04] shadow-sm'
+                : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0] hover:scale-[1.02]'
+                }`}
             >
               Tất cả
             </button>
@@ -320,11 +318,10 @@ export default function MenuClient({
               <button
                 key={sub}
                 onClick={() => { setActiveSubCategory(sub); setGridAnimKey(k => k + 1) }}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all duration-200 ${
-                  activeSubCategory === sub
-                    ? 'bg-[#2D5A27] text-white scale-[1.04] shadow-sm'
-                    : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0] hover:scale-[1.02]'
-                }`}
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all duration-200 ${activeSubCategory === sub
+                  ? 'bg-[#2D5A27] text-white scale-[1.04] shadow-sm'
+                  : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0] hover:scale-[1.02]'
+                  }`}
               >
                 {sub}
               </button>
@@ -332,11 +329,10 @@ export default function MenuClient({
             {hasNullSubCategory && (
               <button
                 onClick={() => { setActiveSubCategory('other'); setGridAnimKey(k => k + 1) }}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all duration-200 ${
-                  activeSubCategory === 'other'
-                    ? 'bg-[#2D5A27] text-white scale-[1.04] shadow-sm'
-                    : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0] hover:scale-[1.02]'
-                }`}
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all duration-200 ${activeSubCategory === 'other'
+                  ? 'bg-[#2D5A27] text-white scale-[1.04] shadow-sm'
+                  : 'bg-white text-[#6B5E4E] border border-[#D4C4A8] hover:bg-[#F0EAE0] hover:scale-[1.02]'
+                  }`}
               >
                 Khác
               </button>
@@ -353,7 +349,7 @@ export default function MenuClient({
           {/* Mobile Quick Info Grid */}
           <div className="lg:hidden grid grid-cols-2 gap-2 px-4 pt-5 pb-2">
             {/* Phone */}
-            <a href="tel:0375023839" className="flex items-center gap-2.5 p-2.5 bg-white border border-[#E8E0D0] rounded-xl active:scale-[0.98] transition-all">
+            <a href="tel:0375023839" className="flex items-center gap-2.5 p-2.5 bg-[#FDFBF7] border-2 border-[#2D5A27]/25 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] active:scale-[0.98] transition-all animate-border-pulse">
               <div className="size-7 rounded-full bg-[#EBF3EC] flex items-center justify-center text-[#2D5A27] shrink-0">
                 <svg className="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -365,7 +361,7 @@ export default function MenuClient({
               </div>
             </a>
             {/* Facebook */}
-            <a href="https://www.facebook.com/camtuyen.nguyenthi.187" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 p-2.5 bg-white border border-[#E8E0D0] rounded-xl active:scale-[0.98] transition-all">
+            <a href="https://www.facebook.com/camtuyen.nguyenthi.187" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 p-2.5 bg-[#FDFBF7] border-2 border-[#2D5A27]/25 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] active:scale-[0.98] transition-all animate-border-pulse [animation-delay:400ms]">
               <div className="size-7 rounded-full bg-[#EBF3EC] flex items-center justify-center text-[#2D5A27] shrink-0">
                 <svg className="size-3.5 fill-current" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
@@ -377,7 +373,7 @@ export default function MenuClient({
               </div>
             </a>
             {/* Delivery */}
-            <div className="flex items-center gap-2.5 p-2.5 bg-white border border-[#E8E0D0] rounded-xl">
+            <div className="flex items-center gap-2.5 p-2.5 bg-[#FDFBF7] border-2 border-[#2D5A27]/25 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] animate-border-pulse [animation-delay:800ms]">
               <div className="size-7 rounded-full bg-[#EBF3EC] flex items-center justify-center text-[#2D5A27] shrink-0">
                 <svg className="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M5 18h14M5 18a2 2 0 11-4 0 2 2 0 014 0zm14 0a2 2 0 11-4 0 2 2 0 014 0zm-7-4v-7H4v7h8zm0 0v-5h5l2.5 3H20v2h-8z" />
@@ -389,22 +385,22 @@ export default function MenuClient({
               </div>
             </div>
             {/* Freshness */}
-            <div className="flex items-center gap-2.5 p-2.5 bg-white border border-[#E8E0D0] rounded-xl">
+            <div className="flex items-center gap-2.5 p-2.5 bg-[#FDFBF7] border-2 border-[#2D5A27]/25 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] animate-border-pulse [animation-delay:1200ms]">
               <div className="size-7 rounded-full bg-[#EBF3EC] flex items-center justify-center text-[#2D5A27] shrink-0">
                 <svg className="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M11 20A7 7 0 019.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.58 1 9.2a7 7 0 01-14 3.19M11 20c2.2-2.2 4.9-5.2 6-8" />
                 </svg>
               </div>
               <div className="min-w-0">
-                <p className="font-bold text-[#2D5A27] text-[11px] leading-tight truncate">100% Đà Lạt tươi</p>
-                <p className="text-[#8B7355] text-[9px]">Chọn lọc mỗi sáng</p>
+                <p className="font-bold text-[#2D5A27] text-[11px] leading-tight truncate">100% hàng chọn lọc</p>
+                <p className="text-[#8B7355] text-[9px]">tươi mới mỗi ngày</p>
               </div>
             </div>
           </div>
           {/* Category heading */}
           {activeCategory && (
             <div className="px-4 sm:px-8 pt-6 pb-4">
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#2D1810]">{activeCategory}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#2D5A27]">{activeCategory}</h1>
               {activeCategory === 'Rau Củ Quả Đà Lạt' && (
                 <p className="text-[#8B7355] text-sm mt-1">Hương vị thuần khiết từ cao nguyên, được chọn lọc kỹ lưỡng mỗi ngày cho bữa cơm gia đình trọn vẹn.</p>
               )}
@@ -425,7 +421,7 @@ export default function MenuClient({
                     onClick={() => setSelectedItem(item)}
                     onMouseEnter={() => { if (item.image_url) preloadImage(item.image_url) }}
                     onTouchStart={() => { if (item.image_url) preloadImage(item.image_url) }}
-                    className={`animate-fade-in-up ${getStaggerClass(index)} bg-white rounded-2xl overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-[#EDE8E0] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 flex flex-col cursor-pointer group`}
+                    className={`animate-fade-in-up ${getStaggerClass(index)} bg-[#FAF6EF] rounded-[18px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.08)] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 flex flex-col cursor-pointer group`}
                   >
                     {/* Image */}
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#F5F0E8]">
@@ -517,7 +513,7 @@ export default function MenuClient({
 
               {/* Empty product placeholder (giống design gốc) */}
               {filtered.length % 2 !== 0 && (
-                <div className="hidden sm:flex bg-white/60 rounded-2xl border border-dashed border-[#D4C4A8] items-center justify-center aspect-[3/4] sm:aspect-auto sm:min-h-[280px] flex-col gap-2 text-[#B0A090]">
+                <div className="hidden sm:flex bg-[#FAF6EF]/60 rounded-[18px] border border-dashed border-[#D4C4A8] items-center justify-center aspect-[3/4] sm:aspect-auto sm:min-h-[280px] flex-col gap-2 text-[#B0A090]">
                   <span className="text-2xl">🌿</span>
                   <p className="text-xs font-medium text-center px-3">Đang cập nhật thêm sản phẩm tươi mới...</p>
                 </div>
@@ -527,7 +523,7 @@ export default function MenuClient({
         </main>
 
         {/* ===== CỘT PHẢI: ORDER PANEL (Desktop only) ===== */}
-        <aside className="hidden lg:flex lg:w-[380px] border-l border-[#E8E0D0] bg-[#FAFAF7] flex-col sticky top-[var(--header-height,140px)] h-[calc(100vh-140px)] self-start">
+        <aside className="hidden lg:flex lg:w-[380px] border-l border-[#E8E0D0] bg-[#E3D9C6] flex-col sticky top-[var(--header-height,140px)] h-[calc(100vh-140px)] self-start">
           <OrderPanel
             cart={cart}
             slug={slug}
@@ -552,12 +548,12 @@ export default function MenuClient({
                 <svg className="size-4 fill-current" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
-                Facebook: Nguyễn Thị Cẩm Tuyền
+                Facebook: Nguyễn Thị Cẩm Tuyền house's
               </a>
             </div>
             <p className="text-[#C4A882] text-sm mt-2 flex items-center gap-1.5">
               <svg className="size-4 fill-current shrink-0" viewBox="0 0 24 24">
-                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
               </svg>
               037.502.3839
             </p>
@@ -578,7 +574,7 @@ export default function MenuClient({
             <p className="font-bold text-sm uppercase tracking-widest text-[#C4A882] mb-4">Liên Hệ</p>
             <ul className="space-y-2.5 text-sm text-[#C4A882]">
               <li>Địa chỉ: ~ Cầu Ngũ Hiệp, Cai Lậy, Tiền Giang</li>
-              <li>Giờ mở cửa: 07:00 – 21:00</li>
+              <li>Giờ mở cửa: 08:00 – 16:00</li>
             </ul>
           </div>
 
@@ -612,7 +608,7 @@ export default function MenuClient({
 
       {/* ===== MOBILE: Sticky bottom bar ===== */}
       {totalQty > 0 && (
-        <div className="animate-slide-up lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-[#FAFAF7]/90 backdrop-blur-md border-t border-[#E8E0D0] z-40">
+        <div className="animate-slide-up lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-[#E3D9C6]/90 backdrop-blur-md border-t border-[#E8E0D0] z-40">
           <div className="h-14 bg-[#2D5A27] text-white rounded-2xl flex items-center justify-between px-4 shadow-[0_-4px_24px_rgba(45,90,39,0.35)]">
             <div className="flex items-center gap-2.5">
               <div className="relative">
@@ -643,7 +639,7 @@ export default function MenuClient({
       {/* ===== MOBILE: Order panel bottom sheet ===== */}
       {showOrderPanel && (
         <div className="animate-fade-in lg:hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex flex-col justify-end">
-          <div className="animate-slide-in-bottom bg-[#FAFAF7] rounded-t-[2rem] max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+          <div className="animate-slide-in-bottom bg-[#FDFBF7] rounded-t-[2rem] max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
             <div className="flex-1 overflow-y-auto">
               <OrderPanel
                 cart={cart}

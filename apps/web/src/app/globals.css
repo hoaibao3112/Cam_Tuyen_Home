@@ -118,3 +118,20 @@ body {
   animation: shimmer 1.4s ease-in-out infinite;
 }
 
+/* Breathing Border Animation */
+@keyframes borderPulse {
+  0%, 100% {
+    border-color: rgba(45, 90, 39, 0.25);
+    box-shadow: 0 4px 12px rgba(45, 90, 39, 0.03), 0 2px 4px rgba(0, 0, 0, 0.02);
+  }
+  50% {
+    border-color: rgba(45, 90, 39, 0.85);
+    box-shadow: 0 8px 24px rgba(45, 90, 39, 0.16), 0 3px 8px rgba(45, 90, 39, 0.06);
+  }
+}
+
+.animate-border-pulse {
+  animation: borderPulse 3s infinite ease-in-out;
+}
+
+
