@@ -682,6 +682,13 @@ export default function MenuClient({
 
             <div className="flex-1 overflow-y-auto pb-6">
               <div className="relative w-full aspect-[4/3] max-h-[360px] bg-[#F5F0E8] overflow-hidden shrink-0">
+                {/* Lớp phủ loading vòng xoay khi ảnh đang tải */}
+                {!modalImageLoaded && selectedItem.image_url && (
+                  <div className="absolute inset-0 z-10 bg-[#F5F0E8] flex flex-col items-center justify-center gap-2">
+                    <div className="size-8 border-3 border-[#2D5A27] border-t-transparent rounded-full animate-spin" />
+                    <span className="text-[10px] sm:text-xs font-bold text-[#8B7355] animate-pulse">Đang tải ảnh...</span>
+                  </div>
+                )}
                 {selectedItem.image_url ? (
                   <Image
                     src={getModalImageUrl(selectedItem.image_url)}
@@ -694,6 +701,7 @@ export default function MenuClient({
                     quality={85}
                     priority
                     onLoad={() => setModalImageLoaded(true)}
+                    onError={() => setModalImageLoaded(true)}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-5xl select-none">🌿</div>
