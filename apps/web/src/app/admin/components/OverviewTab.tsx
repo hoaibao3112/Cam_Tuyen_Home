@@ -243,7 +243,7 @@ export default function OverviewTab({ shopSlug }: OverviewTabProps) {
                     return (
                       <div
                         key={item.date}
-                        className="flex-1 flex flex-col items-center justify-end gap-0.5 cursor-pointer relative"
+                        className="flex-1 h-full flex flex-col items-center justify-end gap-0.5 cursor-pointer relative"
                         onMouseEnter={() => setHoveredBar(item.date)}
                         onMouseLeave={() => setHoveredBar(null)}
                         onTouchStart={() => setHoveredBar(isHovered ? null : item.date)}
@@ -279,7 +279,7 @@ export default function OverviewTab({ shopSlug }: OverviewTabProps) {
                     return (
                       <div
                         key={item.month}
-                        className="flex-1 flex flex-col items-center justify-end gap-0.5 cursor-pointer relative"
+                        className="flex-1 h-full flex flex-col items-center justify-end gap-0.5 cursor-pointer relative"
                         onMouseEnter={() => setHoveredBar(String(item.month))}
                         onMouseLeave={() => setHoveredBar(null)}
                         onTouchStart={() => setHoveredBar(isHovered ? null : String(item.month))}
