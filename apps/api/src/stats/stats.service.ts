@@ -137,16 +137,16 @@ export class StatsService {
   // Trả về: số đơn hôm nay, doanh thu hôm nay, đơn pending, đơn mới nhất
 
   async getToday(shop_slug: string) {
-    const now = new Date()
-    // Lấy đầu ngày theo giờ VN (UTC+7)
-    const startOfDay = new Date(now)
-    startOfDay.setHours(0, 0, 0, 0)
-    const endOfDay = new Date(now)
-    endOfDay.setHours(23, 59, 59, 999)
+    const vnNow = toVietnamDate(new Date())
+    
+    const vnStartOfDay = new Date(vnNow)
+    vnStartOfDay.setHours(0, 0, 0, 0)
+    
+    const vnEndOfDay = new Date(vnNow)
+    vnEndOfDay.setHours(23, 59, 59, 999)
 
-    // Offset VN: bù -7h để convert sang UTC khi query
-    const utcStart = new Date(startOfDay.getTime() - 7 * 60 * 60 * 1000).toISOString()
-    const utcEnd = new Date(endOfDay.getTime() - 7 * 60 * 60 * 1000).toISOString()
+    const utcStart = toUtcDate(vnStartOfDay).toISOString()
+    const utcEnd = toUtcDate(vnEndOfDay).toISOString()
 
     const { data, error } = await this.supabase.db
       .from('orders')
@@ -183,18 +183,14 @@ export class StatsService {
     }
   }
 
-  // ─── NEW API 2: Biểu đồ 30 ngày gần nhất ─────────────────────────────────
-  // GET /stats/daily-chart?shop_slug=xxx
-  // Trả về: mảng 30 phần tử { date, revenue, ordersCount }
-
   async getDailyChart(shop_slug: string) {
-    const now = new Date()
-    const days30Ago = new Date(now)
-    days30Ago.setDate(now.getDate() - 29)
-    days30Ago.setHours(0, 0, 0, 0)
+    const vnNow = toVietnamDate(new Date())
+    const vnDays30Ago = new Date(vnNow)
+    vnDays30Ago.setDate(vnNow.getDate() - 29)
+    vnDays30Ago.setHours(0, 0, 0, 0)
 
-    const utcStart = new Date(days30Ago.getTime() - 7 * 60 * 60 * 1000).toISOString()
-    const utcEnd = new Date(now.getTime() - 7 * 60 * 60 * 1000).toISOString()
+    const utcStart = toUtcDate(vnDays30Ago).toISOString()
+    const utcEnd = toUtcDate(vnNow).toISOString()
 
     const { data, error } = await this.supabase.db
       .from('orders')
@@ -206,19 +202,19 @@ export class StatsService {
 
     if (error) throw new BadRequestException('Lỗi lấy daily chart: ' + error.message)
 
-    // Tạo map 30 ngày
+    // Tạo map 30 ngày sử dụng format YYYY-MM-DD
     const dateMap = new Map<string, { revenue: number; ordersCount: number }>()
     for (let i = 0; i < 30; i++) {
-      const d = new Date(days30Ago)
-      d.setDate(days30Ago.getDate() + i)
-      const key = d.toISOString().slice(0, 10) // YYYY-MM-DD
+      const d = new Date(vnDays30Ago)
+      d.setDate(vnDays30Ago.getDate() + i)
+      const key = formatYYYYMMDD(d)
       dateMap.set(key, { revenue: 0, ordersCount: 0 })
     }
 
     ;(data || []).forEach(order => {
-      // Chuyển về giờ VN để lấy đúng ngày
-      const vnDate = new Date(new Date(order.created_at).getTime() + 7 * 60 * 60 * 1000)
-      const key = vnDate.toISOString().slice(0, 10)
+      // Chuyển created_at (UTC) sang VN time
+      const vnOrderDate = toVietnamDate(new Date(order.created_at))
+      const key = formatYYYYMMDD(vnOrderDate)
       const entry = dateMap.get(key)
       if (entry) {
         entry.revenue += order.total_price || 0
