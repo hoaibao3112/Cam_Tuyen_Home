@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 
@@ -98,22 +98,14 @@ export default function OverviewTab({ shopSlug }: OverviewTabProps) {
     if (!shopSlug) return
     setLoading(true); setError('')
     try {
-      const base = `/api/admin/stats`
-      const qs   = (p: string) => `${base}/${p}?shop_slug=${shopSlug}`
+      // Goi 1 endpoint /stats/overview duy nhat thay vi 7 API rieng le truoc day
+      // (4 trong so do tung tu fetch lai nguyen don hang ca nam tu Supabase trung lap nhau)
+      const res = await fetch(`/api/admin/stats/overview?shop_slug=${shopSlug}&year=${year}&month=${month}`)
+      const data = await res.json()
 
-      const [s, c, tp, today, daily, status, cats] = await Promise.all([
-        fetch(`${qs('summary')}&year=${year}&month=${month}`).then(r => r.json()),
-        fetch(`${qs('revenue-chart')}&year=${year}`).then(r => r.json()),
-        fetch(`${qs('top-products')}&year=${year}&limit=5`).then(r => r.json()),
-        fetch(`${qs('today')}`).then(r => r.json()),
-        fetch(`${qs('daily-chart')}`).then(r => r.json()),
-        fetch(`${qs('order-status')}&year=${year}&month=${month}`).then(r => r.json()),
-        fetch(`${qs('top-categories')}&year=${year}&month=${month}`).then(r => r.json()),
-      ])
-
-      setSummary(s); setChartData(c || []); setTopProducts(tp || [])
-      setTodayData(today); setDailyData(daily || [])
-      setOrderStatus(status); setTopCats(cats || [])
+      setSummary(data.summary); setChartData(data.chartData || []); setTopProducts(data.topProducts || [])
+      setTodayData(data.today); setDailyData(data.dailyData || [])
+      setOrderStatus(data.orderStatus); setTopCats(data.topCats || [])
     } catch (e: any) {
       setError(e.message || 'Lỗi tải thống kê')
     } finally {

@@ -1,17 +1,21 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase-client'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import ProductTable from './components/ProductTable'
-import ProductFormModal from './components/ProductFormModal'
-import CategoryManager from './components/CategoryManager'
-import ProductReorderPanel from './components/ProductReorderPanel'
-import OverviewTab from './components/OverviewTab'
-import StockInTab from './components/StockInTab'
-import OrdersTab from './components/OrdersTab'
+
+// Lazy-load theo tab: moi luc chi 1 tab active, khong nen nap het 6 component
+// nang (form modal, 3 bieu do thong ke, 2 panel sap xep) ngay tu dau vao bundle /admin.
+const ProductFormModal = dynamic(() => import('./components/ProductFormModal'), { ssr: false })
+const CategoryManager = dynamic(() => import('./components/CategoryManager'), { ssr: false })
+const ProductReorderPanel = dynamic(() => import('./components/ProductReorderPanel'), { ssr: false })
+const OverviewTab = dynamic(() => import('./components/OverviewTab'), { ssr: false })
+const StockInTab = dynamic(() => import('./components/StockInTab'), { ssr: false })
+const OrdersTab = dynamic(() => import('./components/OrdersTab'), { ssr: false })
 
 type MenuItem = {
   id: string

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common'
+﻿import { Injectable, BadRequestException } from '@nestjs/common'
 import { SupabaseService } from '../supabase/supabase.service'
 
 @Injectable()
@@ -239,6 +239,123 @@ export class StatsService {
     }
   }
 
+  // ─── COMBINED: Overview tổng hợp (1 lần fetch orders, dùng chung cho 7 khối UI) ──
+  // GET /stats/overview?shop_slug=xxx&year=2025&month=6
+  // Thay thế việc gọi 7 API riêng lẻ — trong đó summary/revenue-chart/top-products/
+  // top-categories trước đây MỖI cái tự fetch lại nguyên đơn hàng cả năm từ Supabase
+  // (4 lần query giống hệt nhau). Giờ chỉ fetch orders 1 lần (+ 1 lần bản có cancelled
+  // cho order-status), dùng chung cho tất cả phần tính toán.
+
+  async getOverview(shop_slug: string, year: number, month: number) {
+    const [ordersNoCancelled, allOrders, today, dailyData] = await Promise.all([
+      this.getOrdersForYear(shop_slug, year),
+      this.getAllOrdersForYear(shop_slug, year),
+      this.getToday(shop_slug),
+      this.getDailyChart(shop_slug),
+    ])
+
+    // ── Summary ──
+    let yearlyRevenue = 0
+    let monthlyRevenue = 0
+    let monthlyOrdersCount = 0
+    ordersNoCancelled.forEach((order) => {
+      const price = order.total_price || 0
+      yearlyRevenue += price
+      const m = new Date(order.created_at).getMonth() + 1
+      if (m === month) { monthlyRevenue += price; monthlyOrdersCount++ }
+    })
+    const summary = {
+      monthlyRevenue,
+      yearlyRevenue,
+      monthlyOrdersCount,
+      yearlyOrdersCount: ordersNoCancelled.length,
+    }
+
+    // ── Revenue chart (theo tháng trong năm) ──
+    const chartData = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, revenue: 0, ordersCount: 0 }))
+    ordersNoCancelled.forEach((order) => {
+      const m = new Date(order.created_at).getMonth()
+      chartData[m].revenue += order.total_price || 0
+      chartData[m].ordersCount++
+    })
+
+    // ── Top products (theo năm) ──
+    const productMap = new Map<string, { id: string; name: string; quantitySold: number; revenue: number }>()
+    ordersNoCancelled.forEach((order) => {
+      ;(order.items || []).forEach((item: any) => {
+        if (!item.menu_item_id) return
+        const ex = productMap.get(item.menu_item_id)
+        const qty = item.quantity || 0
+        const price = item.price || 0
+        if (ex) { ex.quantitySold += qty; ex.revenue += price * qty }
+        else productMap.set(item.menu_item_id, { id: item.menu_item_id, name: item.name || '?', quantitySold: qty, revenue: price * qty })
+      })
+    })
+    const topProducts = Array.from(productMap.values())
+      .sort((a, b) => b.quantitySold - a.quantitySold)
+      .slice(0, 5)
+
+    // ── Order status (theo năm, lọc theo tháng nếu có, tính cả cancelled) ──
+    const statusFiltered = month
+      ? allOrders.filter(o => new Date(o.created_at).getMonth() + 1 === month)
+      : allOrders
+    const counts = { pending: 0, confirmed: 0, done: 0, cancelled: 0, other: 0 }
+    let cancelledRevenueLost = 0
+    statusFiltered.forEach(o => {
+      const s = o.status as string
+      if (s === 'pending') counts.pending++
+      else if (s === 'confirmed') counts.confirmed++
+      else if (s === 'done') counts.done++
+      else if (s === 'cancelled') { counts.cancelled++; cancelledRevenueLost += o.total_price || 0 }
+      else counts.other++
+    })
+    const statusTotal = statusFiltered.length || 1
+    const orderStatus = {
+      total: statusFiltered.length,
+      counts,
+      rates: {
+        pending: +((counts.pending / statusTotal) * 100).toFixed(1),
+        confirmed: +((counts.confirmed / statusTotal) * 100).toFixed(1),
+        done: +((counts.done / statusTotal) * 100).toFixed(1),
+        cancelled: +((counts.cancelled / statusTotal) * 100).toFixed(1),
+      },
+      cancelledRevenueLost,
+    }
+
+    // ── Top categories (theo năm, lọc theo tháng nếu có) ──
+    const catFiltered = month
+      ? ordersNoCancelled.filter(o => new Date(o.created_at).getMonth() + 1 === month)
+      : ordersNoCancelled
+
+    const allItemIds = new Set<string>()
+    catFiltered.forEach(o => (o.items || []).forEach((i: any) => { if (i.menu_item_id) allItemIds.add(i.menu_item_id) }))
+
+    let topCats: { category: string; quantitySold: number; revenue: number }[] = []
+    if (allItemIds.size > 0) {
+      const { data: menuItems } = await this.supabase.db
+        .from('menu_items')
+        .select('id, category')
+        .in('id', Array.from(allItemIds))
+
+      const categoryOf = new Map<string, string>()
+      ;(menuItems || []).forEach((m: any) => categoryOf.set(m.id, m.category || 'Khác'))
+
+      const catMap = new Map<string, { category: string; quantitySold: number; revenue: number }>()
+      catFiltered.forEach(order => {
+        ;(order.items || []).forEach((item: any) => {
+          const cat = categoryOf.get(item.menu_item_id) || 'Khác'
+          const qty = item.quantity || 0
+          const price = item.price || 0
+          const ex = catMap.get(cat)
+          if (ex) { ex.quantitySold += qty; ex.revenue += price * qty }
+          else catMap.set(cat, { category: cat, quantitySold: qty, revenue: price * qty })
+        })
+      })
+      topCats = Array.from(catMap.values()).sort((a, b) => b.revenue - a.revenue)
+    }
+
+    return { summary, chartData, topProducts, today, dailyData, orderStatus, topCats }
+  }
   // ─── NEW API 4: Top danh mục bán chạy ────────────────────────────────────
   // GET /stats/top-categories?shop_slug=xxx&year=2025&month=6
   // Trả về: top danh mục theo số lượng bán + doanh thu

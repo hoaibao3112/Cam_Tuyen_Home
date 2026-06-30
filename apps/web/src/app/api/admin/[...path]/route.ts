@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { revalidateTag, revalidatePath } from 'next/cache'
@@ -47,8 +47,17 @@ async function handleRequest(
   const searchParams = req.nextUrl.searchParams.toString()
   const targetUrl = `${apiUrl}/${pathSegments}${searchParams ? '?' + searchParams : ''}`
 
-  // 3. Lấy API key từ env server-side (KHÔNG bao giờ ra client)
-  const adminApiKey = process.env.ADMIN_API_KEY || 'camtuyen_secret_api_key_2026'
+  // 3. Lay API key tu env server-side (KHONG bao gio ra client)
+  // KHONG duoc fallback ve key cung trong source code - neu thieu env phai fail ngay
+  // de tranh truong hop deploy thieu config ma van "chay duoc" bang key cu da bi lo.
+  const adminApiKey = process.env.ADMIN_API_KEY
+  if (!adminApiKey) {
+    console.error('[admin proxy] Thieu bien moi truong ADMIN_API_KEY tren server')
+    return NextResponse.json(
+      { message: 'Loi cau hinh server: thieu ADMIN_API_KEY' },
+      { status: 500 },
+    )
+  }
 
   // 4. Detect nếu là multipart (upload ảnh) — forward nguyên body + Content-Type
   const isMultipart = req.headers.get('content-type')?.includes('multipart/form-data')

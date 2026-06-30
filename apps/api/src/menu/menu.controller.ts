@@ -13,8 +13,8 @@ export class MenuController {
     @Query('all') all?: string,
     @Headers('x-api-key') apiKey?: string,
   ) {
-    const validKey = process.env.ADMIN_API_KEY || 'camtuyen_secret_api_key_2026'
-    const includeInactive = all === 'true' && apiKey === validKey
+    const validKey = process.env.ADMIN_API_KEY
+    const includeInactive = !!(validKey && all === 'true' && apiKey === validKey)
     return this.menuService.getMenuBySlug(slug, includeInactive)
   }
 

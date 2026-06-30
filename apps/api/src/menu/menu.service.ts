@@ -37,11 +37,27 @@ export class MenuService {
       return cached.data
     }
 
-    // 1. Lấy danh sách categories trước để map tên -> sort_order
-    const { data: categoriesData, error: catError } = await this.supabase.db
+    const categoriesQuery = this.supabase.db
       .from('categories')
       .select('name, sort_order')
       .eq('shop_slug', slug)
+
+    let itemsQuery = this.supabase.db
+      .from('menu_items')
+      .select('*')
+      .eq('shop_slug', slug)
+
+    if (!includeInactive) {
+      itemsQuery = itemsQuery.eq('is_active', true)
+    }
+
+    const [categoriesRes, itemsRes] = await Promise.all([
+      categoriesQuery,
+      itemsQuery,
+    ])
+
+    const { data: categoriesData } = categoriesRes
+    const { data: itemsData, error: itemsError } = itemsRes
 
     const categoryOrderMap = new Map<string, number>()
     if (categoriesData) {
@@ -49,18 +65,6 @@ export class MenuService {
         categoryOrderMap.set(cat.name.trim().toLowerCase(), cat.sort_order)
       })
     }
-
-    // 2. Lấy danh sách menu items
-    let query = this.supabase.db
-      .from('menu_items')
-      .select('*')
-      .eq('shop_slug', slug)
-
-    if (!includeInactive) {
-      query = query.eq('is_active', true)
-    }
-
-    const { data: itemsData, error: itemsError } = await query
 
     if (itemsError) throw new NotFoundException('Không tìm thấy menu')
     

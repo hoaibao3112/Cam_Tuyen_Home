@@ -1,11 +1,14 @@
-'use client'
+﻿'use client'
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { MenuItem } from './page'
-import OrderPanel from './OrderPanel'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase-client'
 import { getProductUnit } from '@/lib/product-helper'
+
+// Lazy-load OrderPanel: chi can khi khach mo gio hang, khong nen nam trong bundle ban dau
+const OrderPanel = dynamic(() => import('./OrderPanel'), { ssr: false })
 
 export interface CartItem extends MenuItem {
   quantity: number
@@ -49,7 +52,6 @@ export default function MenuClient({
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
 
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pollingTimer = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const refetchItems = useCallback(async () => {
     try {
@@ -74,12 +76,10 @@ export default function MenuClient({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `shop_slug=eq.${slug}` }, () => scheduleRefetch())
       .subscribe()
 
-    pollingTimer.current = setInterval(refetchItems, 60_000)
-
+    // Da bo polling 60s: Supabase Realtime da du de bat thay doi, polling chi tao tai khong can thiet len Render free tier
     return () => {
       supabase.removeChannel(channel)
       if (refetchTimer.current) clearTimeout(refetchTimer.current)
-      if (pollingTimer.current) clearInterval(pollingTimer.current)
     }
   }, [slug, scheduleRefetch, refetchItems])
 

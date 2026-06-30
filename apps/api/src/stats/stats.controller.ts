@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, BadRequestException } from '@nestjs/common'
+﻿import { Controller, Get, Query, UseGuards, BadRequestException } from '@nestjs/common'
 import { StatsService } from './stats.service'
 import { ApiKeyGuard } from '../common/guards/api-key.guard'
 
@@ -43,6 +43,21 @@ export class StatsController {
     const limit = limitStr ? parseInt(limitStr, 10) : 5
     if (isNaN(year)) throw new BadRequestException('year không hợp lệ')
     return this.statsService.getTopProducts(shopSlug, year, limit)
+  }
+
+  /** Gộp toàn bộ dữ liệu tab Tổng quan vào 1 lần gọi — thay cho 7 API riêng lẻ trước đây */
+  @Get('overview')
+  async getOverview(
+    @Query('shop_slug') shopSlug: string,
+    @Query('year') yearStr?: string,
+    @Query('month') monthStr?: string,
+  ) {
+    if (!shopSlug) throw new BadRequestException('Thiếu shop_slug')
+    const now = new Date()
+    const year = yearStr ? parseInt(yearStr, 10) : now.getFullYear()
+    const month = monthStr ? parseInt(monthStr, 10) : now.getMonth() + 1
+    if (isNaN(year) || isNaN(month)) throw new BadRequestException('year/month không hợp lệ')
+    return this.statsService.getOverview(shopSlug, year, month)
   }
 
   // ── Mới ──────────────────────────────────────────────────────────────────
