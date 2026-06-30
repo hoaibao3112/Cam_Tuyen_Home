@@ -450,7 +450,7 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                   <textarea
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    placeholder="Ít cay, không hành, dị ứng..."
+                    placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao, bọc kỹ hoa..."
                     rows={3}
                     className="w-full bg-[#FDFBF7] border border-[#D4C4A8]/50 text-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:border-[#2D5A27] focus:bg-white transition-all duration-200 resize-none"
                   />
