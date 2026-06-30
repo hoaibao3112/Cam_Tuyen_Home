@@ -134,4 +134,32 @@ body {
   animation: borderPulse 3s infinite ease-in-out;
 }
 
+/* Metallic Shimmer Text Animation */
+@keyframes shimmerText {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-shimmer-text {
+  background: linear-gradient(
+    to right,
+    #1E4620 20%,
+    #C4A882 40%,
+    #D4C4A8 50%,
+    #C4A882 60%,
+    #1E4620 80%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  animation: shimmerText 4s linear infinite;
+}
+
+
 

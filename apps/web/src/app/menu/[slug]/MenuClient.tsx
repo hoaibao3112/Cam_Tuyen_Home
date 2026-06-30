@@ -233,17 +233,17 @@ export default function MenuClient({
 
           {/* CENTER: Logo + Brand */}
           <div className="flex flex-col items-center relative -top-1 sm:-top-1.5 shrink-0 mx-4">
-            <div className="relative w-20 h-20 sm:w-24 sm:h-24">
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-white shadow-[0_4px_16px_rgba(0,0,0,0.08)] border-2 border-[#D4C4A8]/60">
               <Image
                 src="/logooo11.png"
                 alt="Cẩm Tuyền House's"
                 fill
-                className="object-contain"
+                className="object-cover rounded-full"
                 priority
               />
             </div>
             <div className="text-center mt-0.5">
-              <p className="font-bold text-[#2D5A27] text-base sm:text-lg leading-tight" style={{ fontFamily: 'var(--font-lora), Georgia, serif' }}>
+              <p className="font-extrabold text-xl sm:text-2xl leading-tight animate-shimmer-text" style={{ fontFamily: 'var(--font-lora), Georgia, serif' }}>
                 {"C\u1EA9m Tuy\u1EC1n House's"}
               </p>
               <p className="text-[#8B7355] text-[10px] tracking-widest font-medium">SINCE 2021</p>
