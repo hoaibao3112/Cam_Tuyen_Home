@@ -392,38 +392,44 @@ export default function StockInTab({ shopSlug, items, onUpdated }: StockInTabPro
                         )}
                       </div>
 
-                      {/* Qty */}
-                      <div className="w-full sm:w-24">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1 block">Số lượng</label>
-                        <input
-                          type="number" min="0.01" step="any" placeholder="SL"
-                          value={row.quantity}
-                          onChange={e => updateRow(index, 'quantity', e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
-                        />
-                      </div>
+                      {/* Side-by-side inputs on mobile */}
+                      <div className="grid grid-cols-2 gap-3 sm:flex sm:items-end sm:gap-3 flex-shrink-0">
+                        {/* Qty */}
+                        <div className="w-full sm:w-24">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1 block">Số lượng</label>
+                          <input
+                            type="number" min="0.01" step="any" placeholder="SL"
+                            value={row.quantity}
+                            onChange={e => updateRow(index, 'quantity', e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
+                          />
+                        </div>
 
-                      {/* Price */}
-                      <div className="w-full sm:w-32">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1 block">Giá nhập (đ)</label>
-                        <input
-                          type="number" min="0" placeholder="Giá"
-                          value={row.importPrice}
-                          onChange={e => updateRow(index, 'importPrice', e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
-                        />
+                        {/* Price */}
+                        <div className="w-full sm:w-32">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1 block">Giá nhập (đ)</label>
+                          <input
+                            type="number" min="0" placeholder="Giá"
+                            value={row.importPrice}
+                            onChange={e => updateRow(index, 'importPrice', e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
+                          />
+                        </div>
                       </div>
 
                       {/* Total + delete */}
-                      <div className="flex items-center justify-between sm:justify-start sm:gap-3">
-                        <span className="text-sm font-extrabold text-slate-800">
-                          {rowTotal > 0 ? rowTotal.toLocaleString('vi-VN') + 'đ' : <span className="text-slate-300">0đ</span>}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeRow(index)}
-                          className="size-8 rounded-xl border border-rose-100 hover:bg-rose-50 text-rose-400 hover:text-rose-600 flex items-center justify-center text-lg font-black transition-colors cursor-pointer ml-2 sm:ml-0"
-                        >×</button>
+                      <div className="flex items-center justify-between sm:justify-end sm:gap-3 sm:pb-[2px]">
+                        <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase tracking-wide">Thành tiền</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-slate-800">
+                            {rowTotal > 0 ? rowTotal.toLocaleString('vi-VN') + 'đ' : <span className="text-slate-300">0đ</span>}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeRow(index)}
+                            className="size-8 rounded-xl border border-rose-100 hover:bg-rose-50 text-rose-400 hover:text-rose-600 flex items-center justify-center text-lg font-black transition-colors cursor-pointer ml-2 sm:ml-0"
+                          >×</button>
+                        </div>
                       </div>
 
                     </div>

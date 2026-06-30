@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase-client'
-import Sidebar from './components/Sidebar'
+import Sidebar, { BottomNav } from './components/Sidebar'
 import Header from './components/Header'
 import ProductTable from './components/ProductTable'
 
@@ -809,6 +809,9 @@ export default function AdminPage() {
           onRenameSubCategory={handleRenameSubCategory}
         />
       )}
+
+      {/* MOBILE BOTTOM NAVIGATION */}
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   )
 }

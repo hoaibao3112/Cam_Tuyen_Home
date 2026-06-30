@@ -243,7 +243,7 @@ export default function OrdersTab({ shopSlug }: OrdersTabProps) {
                       }`}
                     >
                       <option value="done" className="text-emerald-700 bg-white font-bold">🟢 Thành công</option>
-                      <option value="cancelled" className="text-rose-700 bg-white font-bold">❌ Không thành công (Boom đơn)</option>
+                      <option value="cancelled" className="text-rose-700 bg-white font-bold">❌ Hủy / Boom đơn</option>
                     </select>
                     {updatingId === order.id && (
                       <span className="w-4 h-4 border-2 border-slate-200 border-t-sky-500 rounded-full animate-spin" />
@@ -254,7 +254,7 @@ export default function OrdersTab({ shopSlug }: OrdersTabProps) {
                 {/* Content grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                   {/* Left: Customer Info */}
-                  <div className="space-y-1.5 border-r border-slate-50 pr-4">
+                  <div className="space-y-1.5 lg:border-r border-slate-100 lg:pr-4 pr-0 pb-3 lg:pb-0 border-b lg:border-b-0">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
                       Thông tin khách hàng
                     </p>
@@ -275,7 +275,7 @@ export default function OrdersTab({ shopSlug }: OrdersTabProps) {
                   </div>
 
                   {/* Middle: Items List */}
-                  <div className="space-y-1.5 border-r border-slate-50 pr-4 lg:col-span-2 flex flex-col justify-between">
+                  <div className="space-y-1.5 lg:col-span-2 flex flex-col justify-between">
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">
                         Chi tiết sản phẩm
