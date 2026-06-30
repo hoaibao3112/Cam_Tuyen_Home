@@ -10,6 +10,8 @@ import ProductFormModal from './components/ProductFormModal'
 import CategoryManager from './components/CategoryManager'
 import ProductReorderPanel from './components/ProductReorderPanel'
 import OverviewTab from './components/OverviewTab'
+import StockInTab from './components/StockInTab'
+import OrdersTab from './components/OrdersTab'
 
 type MenuItem = {
   id: string
@@ -22,6 +24,10 @@ type MenuItem = {
   shop_slug: string
   image_url?: string
   sort_order?: number
+  track_stock?: boolean
+  stock?: number
+  import_price?: number
+  unit?: string | null
 }
 
 type Category = {
@@ -57,6 +63,10 @@ const emptyForm = {
   description: '',
   is_active: true,
   image_url: '',
+  track_stock: false,
+  stock: '0',
+  import_price: '0',
+  unit: '',
 }
 
 export default function AdminPage() {
@@ -70,7 +80,7 @@ export default function AdminPage() {
   const [editId, setEditId] = useState<string | null>(null)
 
   // State điều hướng tab
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'reorder'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'reorder' | 'stock-in' | 'orders'>('overview')
   // Category được chọn trong view Sắp xếp menu
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
@@ -237,6 +247,10 @@ export default function AdminPage() {
       is_active: form.is_active,
       shop_slug: shopSlug,
       image_url: form.image_url.trim(),
+      track_stock: form.track_stock,
+      stock: form.track_stock ? Number(form.stock || 0) : 0,
+      import_price: Number(form.import_price || 0),
+      unit: form.unit.trim() || null,
     }
 
     try {
@@ -353,6 +367,10 @@ export default function AdminPage() {
       description: item.description || '',
       is_active: item.is_active,
       image_url: item.image_url || '',
+      track_stock: item.track_stock || false,
+      stock: String(item.stock || 0),
+      import_price: String(item.import_price || 0),
+      unit: item.unit || '',
     })
     setIsModalOpen(true)
   }
@@ -638,6 +656,14 @@ export default function AdminPage() {
         <main className="p-4 sm:p-8 flex-1 flex flex-col min-h-0">
           {activeTab === 'overview' && configLoaded && shopSlug && (
             <OverviewTab shopSlug={shopSlug} />
+          )}
+
+          {activeTab === 'orders' && configLoaded && shopSlug && (
+            <OrdersTab shopSlug={shopSlug} />
+          )}
+
+          {activeTab === 'stock-in' && configLoaded && shopSlug && (
+            <StockInTab shopSlug={shopSlug} items={items} onUpdated={() => fetchItems(shopSlug)} />
           )}
 
           {activeTab === 'products' && (

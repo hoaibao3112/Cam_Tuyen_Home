@@ -13,6 +13,10 @@ type FormState = {
   description: string
   is_active: boolean
   image_url: string
+  track_stock: boolean
+  stock: string
+  import_price: string
+  unit: string
 }
 
 interface ProductFormModalProps {
@@ -103,7 +107,7 @@ export default function ProductFormModal({
             />
           </div>
 
-          {/* Product Price & Quantity Side by Side (50% - 50%) */}
+          {/* Product Price & Import Price Side by Side (50% - 50%) */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
@@ -119,15 +123,74 @@ export default function ProductFormModal({
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
-                Số lượng
+                Giá nhập (VNĐ)
               </label>
               <input
                 type="number"
-                defaultValue="1"
+                placeholder="0"
+                value={form.import_price}
+                onChange={e => setForm({ ...form, import_price: e.target.value })}
                 className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200"
               />
             </div>
           </div>
+
+          {/* Sell Mechanism & Unit Side by Side */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+                Cơ chế bán hàng
+              </label>
+              <select
+                value={form.track_stock ? 'limited' : 'unlimited'}
+                onChange={e => {
+                  const isLimited = e.target.value === 'limited'
+                  setForm({
+                    ...form,
+                    track_stock: isLimited,
+                    stock: isLimited && (form.stock === '0' || !form.stock) ? '10' : form.stock
+                  })
+                }}
+                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-[#2D1810] focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200 cursor-pointer font-bold"
+              >
+                <option value="unlimited">Vô hạn</option>
+                <option value="limited">Giới hạn số lượng</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+                Đơn vị tính (kg, bó, hộp...)
+              </label>
+              <input
+                type="text"
+                placeholder="Ví dụ: kg, bó, hộp... (tự nhận diện nếu trống)"
+                value={form.unit}
+                onChange={e => setForm({ ...form, unit: e.target.value })}
+                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200"
+              />
+            </div>
+          </div>
+
+          {/* Conditional Stock Count Input */}
+          {form.track_stock && (
+            <div className="animate-fadeIn grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+                  Số lượng trong kho <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="Ví dụ: 50"
+                  value={form.stock}
+                  onChange={e => setForm({ ...form, stock: e.target.value })}
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200"
+                />
+              </div>
+              <div />
+            </div>
+          )}
 
           {/* Category Dropdown Selector */}
           <div>

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, HttpCode, Headers, UseGuards } from '@nestjs/common'
+import { Controller, Post, Body, Get, Query, HttpCode, Headers, UseGuards, Patch, Param } from '@nestjs/common'
 import { ThrottlerGuard } from '@nestjs/throttler'
 import { OrderService } from './order.service'
 import { CreateOrderDto } from './dto/create-order.dto'
@@ -12,6 +12,21 @@ export class OrderController {
   @UseGuards(ThrottlerGuard)
   createOrder(@Body() dto: CreateOrderDto) {
     return this.orderService.createOrder(dto)
+  }
+
+  @Get()
+  @UseGuards(ApiKeyGuard)
+  getOrders(@Query('shop_slug') shopSlug: string) {
+    return this.orderService.getOrders(shopSlug)
+  }
+
+  @Patch(':id/status')
+  @UseGuards(ApiKeyGuard)
+  updateOrderStatus(
+    @Param('id') id: string,
+    @Body('status') status: string,
+  ) {
+    return this.orderService.updateOrderStatus(id, status)
   }
 
   @Get('fb-webhook')

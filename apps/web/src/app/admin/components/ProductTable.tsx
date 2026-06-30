@@ -1,4 +1,4 @@
-'use client'
+import { getProductUnit } from '@/lib/product-helper'
 
 type MenuItem = {
   id: string
@@ -10,6 +10,10 @@ type MenuItem = {
   is_active: boolean
   shop_slug: string
   image_url?: string
+  track_stock?: boolean
+  stock?: number
+  import_price?: number
+  unit?: string | null
 }
 
 interface ProductTableProps {
@@ -46,6 +50,7 @@ export default function ProductTable({
               <th className="py-4 px-6">Hình ảnh</th>
               <th className="py-4 px-6">Tên sản phẩm</th>
               <th className="py-4 px-6">Nhóm sản phẩm</th>
+              <th className="py-4 px-6 text-center">Tồn kho</th>
               <th className="py-4 px-6 text-right">Giá (VNĐ)</th>
               <th className="py-4 px-6 text-center">Hành động</th>
             </tr>
@@ -53,7 +58,7 @@ export default function ProductTable({
           <tbody className="divide-y divide-slate-100">
             {filteredItems.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-12 text-center text-slate-400">
+                <td colSpan={6} className="py-12 text-center text-slate-400">
                   <span className="text-4xl block mb-2">🍽️</span>
                   <p className="text-sm font-medium">Không tìm thấy sản phẩm nào phù hợp.</p>
                 </td>
@@ -113,8 +118,26 @@ export default function ProductTable({
                         )}
                       </div>
                     </td>
+                    <td className="py-3.5 px-6 text-center">
+                      {item.track_stock ? (
+                        <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${
+                          item.stock && item.stock > 0 
+                            ? 'bg-sky-50 text-sky-700 border border-sky-200' 
+                            : 'bg-red-50 text-red-650 border border-red-200'
+                        }`}>
+                          {item.stock} {getProductUnit(item.category, item.unit)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-sm font-semibold">∞ Vô hạn</span>
+                      )}
+                    </td>
                     <td className="py-3.5 px-6 text-right font-extrabold text-slate-800 text-sm">
-                      {item.price.toLocaleString('vi-VN')}
+                      <div>{item.price.toLocaleString('vi-VN')}</div>
+                      {item.import_price ? (
+                        <div className="text-[10px] text-slate-400 font-bold mt-0.5">
+                          Nhập: {item.import_price.toLocaleString('vi-VN')}
+                        </div>
+                      ) : null}
                     </td>
                     <td className="py-3.5 px-6">
                       <div className="flex gap-2 justify-center">
@@ -195,9 +218,23 @@ export default function ProductTable({
                     )}
                   </div>
                   <h4 className="font-bold text-slate-800 text-sm leading-snug mt-1 truncate">{item.name}</h4>
-                  <p className="text-blue-600 font-extrabold text-xs mt-0.5">
-                    {item.price.toLocaleString('vi-VN')}đ
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-blue-600 font-extrabold text-xs">
+                      {item.price.toLocaleString('vi-VN')}đ
+                    </p>
+                    <span className="text-[10px] text-slate-350">|</span>
+                    {item.track_stock ? (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                        item.stock && item.stock > 0 
+                          ? 'bg-sky-50 text-sky-700 border border-sky-100' 
+                          : 'bg-red-50 text-red-650 border border-red-100 animate-pulse'
+                      }`}>
+                        Tồn: {item.stock} {getProductUnit(item.category, item.unit)}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 font-medium">Tồn: ∞</span>
+                    )}
+                  </div>
                 </div>
               </div>
 

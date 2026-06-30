@@ -5,6 +5,7 @@ import { MenuItem } from './page'
 import OrderPanel from './OrderPanel'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase-client'
+import { getProductUnit } from '@/lib/product-helper'
 
 export interface CartItem extends MenuItem {
   quantity: number
@@ -26,16 +27,9 @@ const BADGE_COLOR: Record<string, string> = {
   'Đặc Sản': 'bg-rose-600',
 }
 
-// Helper to get unit label based on category name
-function getItemUnit(category: string): string {
-  const cat = category?.trim()
-  if (cat === 'Rau Củ Quả Đà Lạt' || cat === 'Trái Cây Nhập Khẩu') {
-    return 'kg'
-  }
-  if (cat === 'Hoa Tươi') {
-    return 'bó'
-  }
-  return ''
+// Helper to get unit label based on category name and custom unit
+function getItemUnit(category: string, itemUnit?: string | null): string {
+  return getProductUnit(category, itemUnit)
 }
 
 export default function MenuClient({
@@ -145,6 +139,13 @@ export default function MenuClient({
   const totalPrice = cart.reduce((s, i) => s + i.price * i.quantity, 0)
 
   function addToCart(item: MenuItem) {
+    if (item.track_stock && item.stock !== undefined && item.stock !== null) {
+      const currentQtyInCart = getQty(item.id)
+      if (currentQtyInCart >= item.stock) {
+        alert(`Rất tiếc, sản phẩm "${item.name}" chỉ còn lại ${item.stock} cái/kg trong kho.`)
+        return
+      }
+    }
     setCart((prev) => {
       const exists = prev.find((c) => c.id === item.id)
       if (exists) return prev.map((c) => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c)
@@ -434,16 +435,28 @@ export default function MenuClient({
                       </p>
                       <p className="text-[#2D5A27] font-extrabold text-sm sm:text-base mt-1.5">
                         {item.price.toLocaleString('vi-VN')}đ
-                        {getItemUnit(item.category) && (
+                        {getItemUnit(item.category, item.unit) && (
                           <span className="text-xs text-[#8B7355] font-semibold ml-1">
-                            / {getItemUnit(item.category)}
+                            / {getItemUnit(item.category, item.unit)}
                           </span>
                         )}
                       </p>
+                      {item.track_stock && item.stock !== undefined && item.stock !== null && (
+                        <p className={`text-[10px] font-bold mt-1 ${item.stock > 0 ? 'text-sky-700' : 'text-red-500 animate-pulse'}`}>
+                          {item.stock > 0 ? `Còn lại: ${item.stock} ${getItemUnit(item.category, item.unit)}` : 'Đã hết hàng'}
+                        </p>
+                      )}
 
                       {/* Button */}
                       <div className="mt-2.5" onClick={(e) => e.stopPropagation()}>
-                        {qty === 0 ? (
+                        {item.track_stock && item.stock !== undefined && item.stock !== null && item.stock <= 0 ? (
+                          <button
+                            disabled
+                            className="w-full h-8 sm:h-9 bg-slate-100 text-slate-400 text-[11px] sm:text-xs font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-1.5"
+                          >
+                            Hết hàng
+                          </button>
+                        ) : qty === 0 ? (
                           <button
                             onClick={(e) => { e.stopPropagation(); addToCart(item) }}
                             className="w-full h-8 sm:h-9 bg-[#2D5A27] hover:bg-[#1E3D1A] text-white text-[11px] sm:text-xs font-bold rounded-xl active:scale-[0.95] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
@@ -663,12 +676,17 @@ export default function MenuClient({
                 </h3>
                 <p className="text-[#2D5A27] font-extrabold text-lg sm:text-2xl mt-2">
                   {selectedItem.price.toLocaleString('vi-VN')}đ
-                  {getItemUnit(selectedItem.category) && (
+                  {getItemUnit(selectedItem.category, selectedItem.unit) && (
                     <span className="text-sm text-[#8B7355] font-semibold ml-1">
-                      / {getItemUnit(selectedItem.category)}
+                      / {getItemUnit(selectedItem.category, selectedItem.unit)}
                     </span>
                   )}
                 </p>
+                {selectedItem.track_stock && selectedItem.stock !== undefined && selectedItem.stock !== null && (
+                  <p className={`text-xs font-bold mt-1.5 ${selectedItem.stock > 0 ? 'text-sky-700' : 'text-red-500 animate-pulse'}`}>
+                    {selectedItem.stock > 0 ? `Còn hàng (Số lượng có sẵn: ${selectedItem.stock} ${getItemUnit(selectedItem.category, selectedItem.unit)})` : 'Hết hàng'}
+                  </p>
+                )}
                 <div className="mt-4 sm:mt-5 border-t border-[#EDE8E0] pt-4">
                   <h4 className="text-[10px] sm:text-xs font-extrabold text-[#8B7355] uppercase tracking-widest mb-1.5">
                     Chi tiết sản phẩm
@@ -681,7 +699,14 @@ export default function MenuClient({
             </div>
 
             <div className="p-4 sm:p-5 border-t border-[#EDE8E0] bg-white shrink-0">
-              {getQty(selectedItem.id) === 0 ? (
+              {selectedItem.track_stock && selectedItem.stock !== undefined && selectedItem.stock !== null && selectedItem.stock <= 0 ? (
+                <button
+                  disabled
+                  className="w-full h-12 bg-slate-200 text-slate-400 text-sm font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  Hết hàng
+                </button>
+              ) : getQty(selectedItem.id) === 0 ? (
                 <button
                   onClick={() => addToCart(selectedItem)}
                   className="w-full h-12 bg-[#2D5A27] hover:bg-[#1E3D1A] text-white text-sm font-bold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
@@ -689,7 +714,7 @@ export default function MenuClient({
                   <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Thêm vào đơn · {selectedItem.price.toLocaleString('vi-VN')}đ{getItemUnit(selectedItem.category) ? ` / ${getItemUnit(selectedItem.category)}` : ''}
+                  Thêm vào đơn · {selectedItem.price.toLocaleString('vi-VN')}đ{getItemUnit(selectedItem.category, selectedItem.unit) ? ` / ${getItemUnit(selectedItem.category, selectedItem.unit)}` : ''}
                 </button>
               ) : (
                 <div className="flex items-center gap-3">

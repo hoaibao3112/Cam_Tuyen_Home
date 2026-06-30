@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { CartItem } from './MenuClient'
 import { MenuItem } from './page'
 import Image from 'next/image'
+import { getProductUnit } from '@/lib/product-helper'
 
 interface Props {
   cart: CartItem[]
@@ -270,6 +271,9 @@ export default function OrderPanel({ cart, slug, onAdd, onRemove, onClear, onClo
                       <p className="text-slate-800 text-sm font-bold truncate">{item.name}</p>
                       <p className="text-rose-655 text-sm font-black mt-0.5">
                         {(item.price * item.quantity).toLocaleString('vi-VN')}đ
+                        <span className="text-[10px] text-slate-400 font-bold ml-1.5">
+                          ({item.quantity} {getProductUnit(item.category, item.unit)})
+                        </span>
                       </p>
                     </div>
                     <div className="flex items-center gap-0.5 bg-blue-50 border border-blue-200/50 rounded-xl overflow-hidden flex-shrink-0">

@@ -234,6 +234,31 @@ describe('OrderService — full flow', () => {
         expect(insertCall.note).not.toContain('Ghi chú:')
         expect(insertCall.note).toContain('[Địa chỉ:')
       })
+
+      it('✅ Trừ tồn kho sản phẩm thành công khi đặt hàng', async () => {
+        db.in.mockResolvedValue({
+          data: [{ id: VALID_ITEM_ID, price: 45000, is_active: true, track_stock: true, stock: 10 }],
+          error: null,
+        })
+        db.single.mockResolvedValue({ data: { order_code: 'DH_STOCK' }, error: null })
+
+        await service.createOrder(validDto)
+
+        expect(db.update).toHaveBeenCalledWith({ stock: 8 })
+        expect(db.eq).toHaveBeenCalledWith('id', VALID_ITEM_ID)
+      })
+
+      it('✅ Không trừ tồn kho khi track_stock=false', async () => {
+        db.in.mockResolvedValue({
+          data: [{ id: VALID_ITEM_ID, price: 45000, is_active: true, track_stock: false, stock: 10 }],
+          error: null,
+        })
+        db.single.mockResolvedValue({ data: { order_code: 'DH_NO_STOCK' }, error: null })
+
+        await service.createOrder(validDto)
+
+        expect(db.update).not.toHaveBeenCalled()
+      })
     })
 
     // ───────────────────────────────────────────────────────────────────────
@@ -316,6 +341,17 @@ describe('OrderService — full flow', () => {
           url.includes('api.telegram.org'),
         )
         expect(tgCalls).toHaveLength(0)
+      })
+
+      it('throw BadRequestException khi track_stock=true và stock không đủ', async () => {
+        db.in.mockResolvedValue({
+          data: [{ id: VALID_ITEM_ID, price: 45000, is_active: true, track_stock: true, stock: 1 }],
+          error: null,
+        })
+
+        await expect(service.createOrder(validDto)).rejects.toThrow(
+          new BadRequestException(`Sản phẩm "Com tam" không đủ số lượng tồn kho (Còn lại: 1)`),
+        )
       })
     })
   })

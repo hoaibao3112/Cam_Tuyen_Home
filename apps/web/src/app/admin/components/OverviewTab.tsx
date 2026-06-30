@@ -1,336 +1,452 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
-interface OverviewTabProps {
-  shopSlug: string
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface OverviewTabProps { shopSlug: string }
 
 interface SummaryData {
-  monthlyRevenue: number
-  yearlyRevenue: number
-  monthlyOrdersCount: number
-  yearlyOrdersCount: number
+  monthlyRevenue: number; yearlyRevenue: number
+  monthlyOrdersCount: number; yearlyOrdersCount: number
+}
+interface ChartItem { month: number; revenue: number; ordersCount: number }
+interface DailyItem { date: string; label: string; revenue: number; ordersCount: number }
+interface TopProduct { id: string; name: string; quantitySold: number; revenue: number }
+interface TopCategory { category: string; quantitySold: number; revenue: number }
+interface OrderStatus {
+  total: number
+  counts: { pending: number; confirmed: number; done: number; cancelled: number; other: number }
+  rates: { pending: number; confirmed: number; done: number; cancelled: number }
+  cancelledRevenueLost: number
+}
+interface TodayData {
+  totalOrders: number; totalRevenue: number
+  countByStatus: { pending: number; confirmed: number; done: number; cancelled: number }
+  recentOrders: { order_code: string; customer_name: string; total_price: number; status: string; created_at: string }[]
 }
 
-interface ChartItem {
-  month: number
-  revenue: number
-  ordersCount: number
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const fmt = (n: number) => n.toLocaleString('vi-VN') + 'đ'
+const fmtShort = (n: number) => {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace('.0', '') + 'tr'
+  if (n >= 1_000) return (n / 1_000).toFixed(0) + 'k'
+  return n.toString()
 }
 
-interface TopProductItem {
-  id: string
-  name: string
-  quantitySold: number
-  revenue: number
+const STATUS_META: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+  pending:   { label: 'Chờ xử lý',   color: 'text-amber-600',   bg: 'bg-amber-50',   dot: 'bg-amber-400'   },
+  confirmed: { label: 'Đã xác nhận', color: 'text-blue-600',    bg: 'bg-blue-50',    dot: 'bg-blue-400'    },
+  done:      { label: 'Hoàn thành',  color: 'text-emerald-600', bg: 'bg-emerald-50', dot: 'bg-emerald-400' },
+  cancelled: { label: 'Đã huỷ',      color: 'text-rose-600',    bg: 'bg-rose-50',    dot: 'bg-rose-400'    },
 }
+
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+// Hiển thị đủ số tiền, KHÔNG truncate — tự co font khi chuỗi dài
+function StatCard({ icon, label, value, sub, accent }: {
+  icon: string; label: string; value: string; sub?: string; accent: string
+}) {
+  // Co font theo số ký tự: số tiền VNĐ dài ~15 ký tự → dùng text-sm
+  const valueCls =
+    value.length > 14 ? 'text-sm'
+    : value.length > 11 ? 'text-base'
+    : 'text-lg'
+
+  return (
+    <div className="bg-white border border-slate-100 rounded-2xl p-3 sm:p-4 flex items-start gap-3 shadow-sm hover:shadow-md transition-all">
+      {/* Icon — flex-shrink-0 để không bị ép nhỏ */}
+      <div className={`size-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 mt-0.5 ${accent}`}>
+        {icon}
+      </div>
+      <div className="flex-1 overflow-hidden">
+        {/* Label: 2 dòng nếu cần, không cắt */}
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide leading-snug">
+          {label}
+        </p>
+        {/* Value: KHÔNG truncate, co font tự động */}
+        <p className={`${valueCls} font-black text-slate-800 leading-tight mt-0.5 break-words`}>
+          {value}
+        </p>
+        {sub && <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>}
+      </div>
+    </div>
+  )
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function OverviewTab({ shopSlug }: OverviewTabProps) {
-  const [year, setYear] = useState<number>(new Date().getFullYear())
-  const [month, setMonth] = useState<number>(new Date().getMonth() + 1)
-  const [summary, setSummary] = useState<SummaryData | null>(null)
-  const [chartData, setChartData] = useState<ChartItem[]>([])
-  const [topProducts, setTopProducts] = useState<TopProductItem[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string>('')
+  const now = new Date()
+  const [year, setYear]   = useState(now.getFullYear())
+  const [month, setMonth] = useState(now.getMonth() + 1)
+  const [tab, setTab]     = useState<'daily' | 'monthly'>('daily')
 
-  // Sinh danh sách các năm lựa chọn (từ 2024 đến năm hiện tại)
-  const years = Array.from(
-    { length: new Date().getFullYear() - 2024 + 1 },
-    (_, i) => 2024 + i
-  )
+  const [summary, setSummary]         = useState<SummaryData | null>(null)
+  const [chartData, setChartData]     = useState<ChartItem[]>([])
+  const [dailyData, setDailyData]     = useState<DailyItem[]>([])
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([])
+  const [topCats, setTopCats]         = useState<TopCategory[]>([])
+  const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null)
+  const [todayData, setTodayData]     = useState<TodayData | null>(null)
+  const [loading, setLoading]         = useState(true)
+  const [error, setError]             = useState('')
 
-  const months = Array.from({ length: 12 }, (_, i) => i + 1)
+  const years = Array.from({ length: now.getFullYear() - 2024 + 1 }, (_, i) => 2024 + i)
 
-  useEffect(() => {
+  const fetchAll = useCallback(async () => {
     if (!shopSlug) return
+    setLoading(true); setError('')
+    try {
+      const base = `/api/admin/stats`
+      const qs   = (p: string) => `${base}/${p}?shop_slug=${shopSlug}`
 
-    const fetchData = async () => {
-      setLoading(true)
-      setError('')
-      try {
-        // 1. Fetch Summary
-        const summaryRes = await fetch(
-          `/api/admin/stats/summary?shop_slug=${shopSlug}&year=${year}&month=${month}`
-        )
-        if (!summaryRes.ok) throw new Error('Không thể tải dữ liệu tổng quan')
-        const summaryData = await summaryRes.json()
+      const [s, c, tp, today, daily, status, cats] = await Promise.all([
+        fetch(`${qs('summary')}&year=${year}&month=${month}`).then(r => r.json()),
+        fetch(`${qs('revenue-chart')}&year=${year}`).then(r => r.json()),
+        fetch(`${qs('top-products')}&year=${year}&limit=5`).then(r => r.json()),
+        fetch(`${qs('today')}`).then(r => r.json()),
+        fetch(`${qs('daily-chart')}`).then(r => r.json()),
+        fetch(`${qs('order-status')}&year=${year}&month=${month}`).then(r => r.json()),
+        fetch(`${qs('top-categories')}&year=${year}&month=${month}`).then(r => r.json()),
+      ])
 
-        // 2. Fetch Chart Data
-        const chartRes = await fetch(
-          `/api/admin/stats/revenue-chart?shop_slug=${shopSlug}&year=${year}`
-        )
-        if (!chartRes.ok) throw new Error('Không thể tải dữ liệu biểu đồ')
-        const chartDataVal = await chartRes.json()
-
-        // 3. Fetch Top Products
-        const productsRes = await fetch(
-          `/api/admin/stats/top-products?shop_slug=${shopSlug}&year=${year}&limit=5`
-        )
-        if (!productsRes.ok) throw new Error('Không thể tải danh sách sản phẩm bán chạy')
-        const productsData = await productsRes.json()
-
-        setSummary(summaryData)
-        setChartData(chartDataVal || [])
-        setTopProducts(productsData || [])
-      } catch (err: any) {
-        console.error(err)
-        setError(err.message || 'Lỗi tải dữ liệu thống kê')
-      } finally {
-        setLoading(false)
-      }
+      setSummary(s); setChartData(c || []); setTopProducts(tp || [])
+      setTodayData(today); setDailyData(daily || [])
+      setOrderStatus(status); setTopCats(cats || [])
+    } catch (e: any) {
+      setError(e.message || 'Lỗi tải thống kê')
+    } finally {
+      setLoading(false)
     }
-
-    fetchData()
   }, [shopSlug, year, month])
 
-  const formatVND = (value: number) => {
-    return value.toLocaleString('vi-VN') + 'đ'
-  }
+  useEffect(() => { fetchAll() }, [fetchAll])
 
-  // Tìm tháng có doanh thu cao nhất để làm mốc tỷ lệ phần trăm cho biểu đồ cột
-  const maxRevenue = Math.max(...chartData.map((item) => item.revenue), 1000)
-
-  // Tìm sản phẩm bán chạy nhất để làm mốc tỷ lệ cho progress bar
-  const maxQtySold = Math.max(...topProducts.map((p) => p.quantitySold), 1)
+  const monthlyMax = Math.max(...chartData.map(d => d.revenue), 1)
+  const dailyMax   = Math.max(...dailyData.map(d => d.revenue), 1)
+  const catMax     = Math.max(...topCats.map(c => c.revenue), 1)
+  const prodMax    = Math.max(...topProducts.map(p => p.quantitySold), 1)
 
   if (loading && !summary) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-500 gap-4">
-        <svg className="animate-spin h-8 w-8 text-sky-500" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-        </svg>
-        <span className="text-sm font-medium">Đang tải dữ liệu thống kê...</span>
+      <div className="space-y-4 animate-pulse">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-20 bg-slate-100 rounded-2xl" />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 h-64 bg-slate-100 rounded-2xl" />
+          <div className="h-64 bg-slate-100 rounded-2xl" />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Tiêu đề & Chọn thời gian */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+    <div className="space-y-4">
+
+      {/* ── Header & bộ lọc ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
         <div>
-          <h3 className="text-lg font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-            📊 Thống Kê Báo Cáo
-          </h3>
-          <p className="text-xs text-slate-400 mt-1">
-            Số liệu thống kê doanh số bán hàng nông sản & trái cây
-          </p>
+          <h2 className="text-base sm:text-lg font-bold text-slate-800">📊 Báo Cáo Thống Kê</h2>
+          <p className="text-[11px] text-slate-400 mt-0.5">Dữ liệu bán hàng nông sản &amp; trái cây</p>
         </div>
-
-        {/* Bộ lọc Năm / Tháng */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-slate-500">Tháng:</span>
-            <select
-              value={month}
-              onChange={(e) => setMonth(parseInt(e.target.value, 10))}
-              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:border-sky-500 transition-colors"
-            >
-              {months.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-slate-500">Năm:</span>
-            <select
-              value={year}
-              onChange={(e) => setYear(parseInt(e.target.value, 10))}
-              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:border-sky-500 transition-colors"
-            >
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <select value={month} onChange={e => setMonth(+e.target.value)}
+            className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400">
+            {Array.from({length:12},(_,i)=>i+1).map(m => <option key={m} value={m}>Tháng {m}</option>)}
+          </select>
+          <select value={year} onChange={e => setYear(+e.target.value)}
+            className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400">
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <button onClick={fetchAll}
+            className="bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold px-3 py-2 rounded-xl transition-colors cursor-pointer">
+            🔄 Làm mới
+          </button>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-100 text-red-650 text-sm font-semibold px-4 py-3 rounded-2xl">
-          ⚠️ {error}
-        </div>
+        <div className="bg-red-50 border border-red-200 text-red-600 text-xs font-semibold px-4 py-3 rounded-2xl">⚠️ {error}</div>
       )}
 
-      {/* Grid thẻ số liệu tổng quan */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Doanh thu tháng */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs flex items-center justify-between hover:shadow-md hover:border-slate-200 transition-all duration-300">
-          <div className="space-y-1.5">
-            <span className="text-xs font-bold text-slate-450 uppercase tracking-wider block">
-              Doanh thu tháng này
-            </span>
-            <span className="text-2xl font-black text-emerald-600 block">
-              {formatVND(summary?.monthlyRevenue || 0)}
-            </span>
-          </div>
-          <div className="size-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-2xl shadow-inner flex-shrink-0">
-            💰
-          </div>
-        </div>
-
-        {/* Số đơn tháng */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs flex items-center justify-between hover:shadow-md hover:border-slate-200 transition-all duration-300">
-          <div className="space-y-1.5">
-            <span className="text-xs font-bold text-slate-450 uppercase tracking-wider block">
-              Đơn hàng tháng này
-            </span>
-            <span className="text-2xl font-black text-sky-600 block">
-              {summary?.monthlyOrdersCount || 0} đơn
-            </span>
-          </div>
-          <div className="size-12 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center text-2xl shadow-inner flex-shrink-0">
-            📦
-          </div>
-        </div>
-
-        {/* Doanh thu năm */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs flex items-center justify-between hover:shadow-md hover:border-slate-200 transition-all duration-300">
-          <div className="space-y-1.5">
-            <span className="text-xs font-bold text-slate-450 uppercase tracking-wider block">
-              Doanh thu năm nay
-            </span>
-            <span className="text-2xl font-black text-orange-600 block">
-              {formatVND(summary?.yearlyRevenue || 0)}
-            </span>
-          </div>
-          <div className="size-12 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-2xl shadow-inner flex-shrink-0">
-            📈
-          </div>
-        </div>
-
-        {/* Số đơn năm */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs flex items-center justify-between hover:shadow-md hover:border-slate-200 transition-all duration-300">
-          <div className="space-y-1.5">
-            <span className="text-xs font-bold text-slate-450 uppercase tracking-wider block">
-              Đơn hàng năm nay
-            </span>
-            <span className="text-2xl font-black text-purple-600 block">
-              {summary?.yearlyOrdersCount || 0} đơn
-            </span>
-          </div>
-          <div className="size-12 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center text-2xl shadow-inner flex-shrink-0">
-            🛒
-          </div>
-        </div>
+      {/* ── Row 1: 6 thẻ số liệu ── */}
+      {/* Grid tự điều chỉnh: mobile 2 cột, tablet 3 cột, desktop 6 cột */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+        <StatCard
+          icon="🌅" accent="bg-amber-50"
+          label="Đơn hôm nay"
+          value={`${todayData?.totalOrders ?? 0} đơn`}
+          sub={`⏳ Chờ: ${todayData?.countByStatus.pending ?? 0}`}
+        />
+        <StatCard
+          icon="💵" accent="bg-emerald-50"
+          label="Doanh thu hôm nay"
+          value={fmt(todayData?.totalRevenue ?? 0)}
+        />
+        <StatCard
+          icon="💰" accent="bg-sky-50"
+          label={`Doanh thu tháng ${month}`}
+          value={fmt(summary?.monthlyRevenue ?? 0)}
+          sub={`${summary?.monthlyOrdersCount ?? 0} đơn`}
+        />
+        <StatCard
+          icon="📦" accent="bg-blue-50"
+          label={`Đơn tháng ${month}`}
+          value={`${summary?.monthlyOrdersCount ?? 0} đơn`}
+        />
+        <StatCard
+          icon="📈" accent="bg-purple-50"
+          label={`Doanh thu năm ${year}`}
+          value={fmt(summary?.yearlyRevenue ?? 0)}
+          sub={`${summary?.yearlyOrdersCount ?? 0} đơn`}
+        />
+        <StatCard
+          icon="🛒" accent="bg-rose-50"
+          label={`Tổng đơn năm ${year}`}
+          value={`${summary?.yearlyOrdersCount ?? 0} đơn`}
+        />
       </div>
 
-      {/* Grid Biểu đồ & Sản phẩm bán chạy */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Khối Biểu đồ Doanh thu (Cột trái lớn) */}
-        <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
-          <div className="mb-6">
-            <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-              📊 Biểu đồ doanh thu năm {year}
-            </h4>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Doanh số thu được theo từng tháng
-            </p>
+      {/* ── Row 2: Biểu đồ + Trạng thái đơn ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        {/* Biểu đồ — tab 30 ngày / 12 tháng */}
+        <div className="lg:col-span-2 bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-bold text-slate-800">Biểu đồ doanh thu</h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                {tab === 'daily' ? '30 ngày gần nhất' : `Theo tháng — năm ${year}`}
+              </p>
+            </div>
+            <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
+              {(['daily','monthly'] as const).map(t => (
+                <button key={t} onClick={() => setTab(t)}
+                  className={`text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    tab === t ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                  }`}>
+                  {t === 'daily' ? '30 ngày' : '12 tháng'}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Khung vẽ biểu đồ cột */}
-          <div className="h-64 flex items-end gap-3.5 sm:gap-5 px-2 select-none">
-            {chartData.map((item) => {
-              const heightPercent = Math.max((item.revenue / maxRevenue) * 100, 3) // Tối thiểu 3% để hiển thị vạch nhỏ
-              return (
-                <div key={item.month} className="flex-1 flex flex-col items-center gap-2 group relative">
-                  {/* Tooltip hiển thị khi hover cột */}
-                  <div className="absolute bottom-full mb-2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-250 whitespace-nowrap shadow-md z-10">
-                    <p className="text-slate-200">T{item.month}</p>
-                    <p className="text-sky-300 font-extrabold">{formatVND(item.revenue)}</p>
-                    <p className="text-slate-350">{item.ordersCount} đơn</p>
-                  </div>
-
-                  {/* Cột doanh thu */}
-                  <div
-                    style={{ height: `${heightPercent}%` }}
-                    className="w-full bg-gradient-to-t from-sky-400 to-sky-500 hover:from-sky-500 hover:to-sky-600 rounded-t-lg transition-all duration-300 cursor-pointer shadow-sm relative group-hover:scale-x-105"
-                  >
-                    {/* Hiệu ứng bóng sáng bên trong cột */}
-                    <div className="absolute inset-x-0 top-0 h-1 bg-white/20 rounded-t-lg" />
-                  </div>
-
-                  {/* Tháng */}
-                  <span className="text-[10px] sm:text-xs font-bold text-slate-400 group-hover:text-slate-700 transition-colors">
-                    {item.month}
-                  </span>
-                </div>
-              )
-            })}
+          <div className="h-52 flex items-end gap-1 sm:gap-1.5 px-1 select-none">
+            {tab === 'daily'
+              ? dailyData.map((item, i) => {
+                  const h = Math.max((item.revenue / dailyMax) * 100, item.revenue > 0 ? 4 : 0.5)
+                  const showLabel = i % 5 === 0 || i === dailyData.length - 1
+                  return (
+                    <div key={item.date} className="flex-1 flex flex-col items-center gap-1 group relative">
+                      <div className="absolute bottom-full mb-1.5 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 whitespace-nowrap z-10 shadow-md">
+                        <p className="text-slate-300">{item.label}</p>
+                        <p className="text-sky-300 font-black">{fmt(item.revenue)}</p>
+                        <p className="text-slate-400">{item.ordersCount} đơn</p>
+                      </div>
+                      <div style={{ height: `${h}%` }}
+                        className={`w-full rounded-t-md transition-all duration-200 cursor-pointer ${
+                          item.revenue > 0 ? 'bg-sky-400 hover:bg-sky-500' : 'bg-slate-100'
+                        }`} />
+                      {showLabel && <span className="text-[8px] text-slate-300 font-bold">{item.label}</span>}
+                    </div>
+                  )
+                })
+              : chartData.map(item => {
+                  const h = Math.max((item.revenue / monthlyMax) * 100, item.revenue > 0 ? 4 : 0.5)
+                  return (
+                    <div key={item.month} className="flex-1 flex flex-col items-center gap-1 group relative">
+                      <div className="absolute bottom-full mb-1.5 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 whitespace-nowrap z-10 shadow-md">
+                        <p className="text-slate-300">Tháng {item.month}</p>
+                        <p className="text-sky-300 font-black">{fmt(item.revenue)}</p>
+                        <p className="text-slate-400">{item.ordersCount} đơn</p>
+                      </div>
+                      <div style={{ height: `${h}%` }}
+                        className={`w-full rounded-t-md transition-all duration-200 cursor-pointer ${
+                          item.month === month && item.revenue > 0 ? 'bg-blue-500 hover:bg-blue-600'
+                          : item.revenue > 0 ? 'bg-sky-300 hover:bg-sky-400' : 'bg-slate-100'
+                        }`} />
+                      <span className="text-[10px] text-slate-400 font-bold">{item.month}</span>
+                    </div>
+                  )
+                })
+            }
           </div>
         </div>
 
-        {/* Khối Sản phẩm bán chạy (Cột phải) */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs flex flex-col">
-          <div className="mb-5">
-            <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-              🏆 Top 5 Sản Phẩm Bán Chạy
-            </h4>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Sản phẩm dẫn đầu doanh số năm {year}
-            </p>
-          </div>
+        {/* Trạng thái đơn */}
+        <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col">
+          <h3 className="text-sm font-bold text-slate-800 mb-1">Trạng thái đơn</h3>
+          <p className="text-[10px] text-slate-400 mb-4">Tháng {month}/{year} · Tổng {orderStatus?.total ?? 0} đơn</p>
 
-          {topProducts.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-10 text-slate-400 text-center gap-2">
-              <span className="text-3xl">🥦</span>
-              <p className="text-xs font-semibold">Chưa có số liệu sản phẩm bán ra</p>
-            </div>
+          {orderStatus && orderStatus.total > 0 ? (
+            <>
+              {/* Visual donut-like stacked bar */}
+              <div className="flex h-3 rounded-full overflow-hidden mb-4 gap-0.5">
+                {(['success', 'cancelled'] as const).map(s => {
+                  let count = 0
+                  if (s === 'success') {
+                    count = (orderStatus.counts.pending || 0) + (orderStatus.counts.confirmed || 0) + (orderStatus.counts.done || 0)
+                  } else {
+                    count = orderStatus.counts.cancelled || 0
+                  }
+                  const total = orderStatus.total || 1
+                  const rate = +((count / total) * 100).toFixed(1)
+                  if (!rate) return null
+                  const colors: Record<string, string> = { success: 'bg-emerald-400', cancelled: 'bg-rose-400' }
+                  return <div key={s} style={{ width: `${rate}%` }} className={`${colors[s]} rounded-full`} title={`${s === 'success' ? 'Thành công' : 'Không thành công'}: ${rate}%`} />
+                })}
+              </div>
+
+              <div className="space-y-2.5 flex-1">
+                {[
+                  {
+                    key: 'success',
+                    label: 'Thành công',
+                    dot: 'bg-emerald-400',
+                    bg: 'bg-emerald-50',
+                    color: 'text-emerald-600',
+                    count: (orderStatus.counts.pending || 0) + (orderStatus.counts.confirmed || 0) + (orderStatus.counts.done || 0)
+                  },
+                  {
+                    key: 'cancelled',
+                    label: 'Không thành công (Boom đơn)',
+                    dot: 'bg-rose-400',
+                    bg: 'bg-rose-50',
+                    color: 'text-rose-600',
+                    count: orderStatus.counts.cancelled || 0
+                  }
+                ].map(meta => {
+                  const total = orderStatus.total || 1
+                  const rate = +((meta.count / total) * 100).toFixed(1)
+                  return (
+                    <div key={meta.key} className="flex items-center gap-2">
+                      <span className={`size-2.5 rounded-full flex-shrink-0 ${meta.dot}`} />
+                      <span className="text-[11px] font-semibold text-slate-600 flex-1">{meta.label}</span>
+                      <span className="text-[11px] font-black text-slate-800">{meta.count}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${meta.bg} ${meta.color}`}>{rate}%</span>
+                    </div>
+                  )
+                })}
+              </div>
+              {orderStatus.cancelledRevenueLost > 0 && (
+                <div className="mt-3 pt-3 border-t border-slate-100 text-[10px] text-rose-500 font-semibold">
+                  ⚠️ Doanh thu mất do huỷ: <b>{fmt(orderStatus.cancelledRevenueLost)}</b>
+                </div>
+              )}
+            </>
           ) : (
-            <div className="space-y-4 flex-1 overflow-y-auto">
-              {topProducts.map((product, index) => {
-                const percentWidth = (product.quantitySold / maxQtySold) * 100
-                const colors = [
-                  'bg-yellow-400', // Hạng 1
-                  'bg-slate-400',  // Hạng 2
-                  'bg-orange-400', // Hạng 3
-                  'bg-sky-400',    // Hạng 4
-                  'bg-sky-300'     // Hạng 5
-                ]
-                return (
-                  <div key={product.id} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs font-bold">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {/* Huy hiệu thứ hạng */}
-                        <span className={`size-5 rounded-full flex items-center justify-center text-[10px] text-white flex-shrink-0 font-black ${
-                          index < 3 ? colors[index] : 'bg-slate-300'
-                        }`}>
-                          {index + 1}
-                        </span>
-                        <span className="text-slate-700 truncate">{product.name}</span>
-                      </div>
-                      <span className="text-slate-400 flex-shrink-0 ml-2">
-                        Đã bán: <b className="text-slate-700">{product.quantitySold}</b>
-                      </span>
-                    </div>
-
-                    {/* Thanh tỷ lệ bán ra */}
-                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        style={{ width: `${percentWidth}%` }}
-                        className={`h-full rounded-full transition-all duration-500 bg-sky-500`}
-                      />
-                    </div>
-
-                    {/* Doanh thu mang về */}
-                    <div className="text-[10px] text-slate-450 text-right font-medium">
-                      Doanh thu: {formatVND(product.revenue)}
-                    </div>
-                  </div>
-                )
-              })}
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-2 py-8">
+              <span className="text-3xl">📭</span>
+              <p className="text-xs font-semibold">Chưa có đơn hàng</p>
             </div>
           )}
         </div>
       </div>
+
+      {/* ── Row 3: Top SP + Top danh mục + Đơn hôm nay ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+        {/* Top sản phẩm */}
+        <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-800 mb-0.5">🏆 Top 5 Sản phẩm</h3>
+          <p className="text-[10px] text-slate-400 mb-4">Bán chạy nhất năm {year}</p>
+          {topProducts.length === 0
+            ? <div className="py-8 text-center text-slate-400"><span className="text-2xl">🥦</span><p className="text-xs mt-2 font-semibold">Chưa có dữ liệu</p></div>
+            : (
+              <div className="space-y-3">
+                {topProducts.map((p, i) => {
+                  const badges = ['🥇','🥈','🥉','4️⃣','5️⃣']
+                  return (
+                    <div key={p.id} className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-base flex-shrink-0">{badges[i]}</span>
+                        <span className="font-semibold text-slate-700 flex-1 truncate">{p.name}</span>
+                        <span className="font-black text-slate-800 flex-shrink-0">×{p.quantitySold}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div style={{ width:`${(p.quantitySold/prodMax)*100}%` }} className="h-full bg-sky-400 rounded-full transition-all duration-500" />
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-medium w-16 text-right flex-shrink-0">{fmtShort(p.revenue)}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          }
+        </div>
+
+        {/* Top danh mục */}
+        <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-800 mb-0.5">📂 Top Danh mục</h3>
+          <p className="text-[10px] text-slate-400 mb-4">Doanh thu theo nhóm T{month}/{year}</p>
+          {topCats.length === 0
+            ? <div className="py-8 text-center text-slate-400"><span className="text-2xl">📦</span><p className="text-xs mt-2 font-semibold">Chưa có dữ liệu</p></div>
+            : (
+              <div className="space-y-3">
+                {topCats.slice(0,5).map((cat, i) => {
+                  const colors = ['bg-emerald-400','bg-sky-400','bg-purple-400','bg-amber-400','bg-rose-400']
+                  return (
+                    <div key={cat.category} className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className={`size-2 rounded-full flex-shrink-0 ${colors[i]||'bg-slate-300'}`} />
+                        <span className="font-semibold text-slate-700 flex-1 truncate">{cat.category}</span>
+                        <span className="text-[10px] text-slate-400 flex-shrink-0">{cat.quantitySold} SP</span>
+                        <span className="font-black text-slate-800 flex-shrink-0 w-14 text-right text-[11px]">{fmtShort(cat.revenue)}</span>
+                      </div>
+                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div style={{ width:`${(cat.revenue/catMax)*100}%` }} className={`h-full ${colors[i]||'bg-slate-300'} rounded-full transition-all duration-500`} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          }
+        </div>
+
+        {/* Đơn hàng hôm nay */}
+        <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-800 mb-0.5">🕐 Đơn hàng hôm nay</h3>
+          <p className="text-[10px] text-slate-400 mb-4">5 đơn gần nhất · {new Date().toLocaleDateString('vi-VN')}</p>
+          {!todayData || todayData.recentOrders.length === 0
+            ? <div className="py-8 text-center text-slate-400"><span className="text-2xl">📭</span><p className="text-xs mt-2 font-semibold">Chưa có đơn hôm nay</p></div>
+            : (
+              <div className="space-y-2">
+                {todayData.recentOrders.map(order => {
+                  const isCancelled = order.status === 'cancelled'
+                  const statusLabel = isCancelled ? 'Không thành công' : 'Thành công'
+                  const statusColor = isCancelled ? 'text-rose-600' : 'text-emerald-600'
+                  const statusDot = isCancelled ? 'bg-rose-400' : 'bg-emerald-400'
+                  const time = new Date(new Date(order.created_at).getTime() + 7*3600*1000)
+                    .toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' })
+                  return (
+                    <div key={order.order_code}
+                      className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
+                      <span className={`size-2 rounded-full flex-shrink-0 ${statusDot}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-bold text-slate-700 truncate">{order.customer_name}</p>
+                        <p className="text-[10px] text-slate-400">{order.order_code} · {time}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        {/* Dùng fmtShort ở đây vì không gian hẹp — hover tooltip nếu muốn xem đủ */}
+                        <p className="text-xs font-black text-slate-800" title={fmt(order.total_price)}>
+                          {fmtShort(order.total_price)}
+                        </p>
+                        <p className={`text-[9px] font-bold ${statusColor}`}>{statusLabel}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          }
+        </div>
+      </div>
+
     </div>
   )
 }

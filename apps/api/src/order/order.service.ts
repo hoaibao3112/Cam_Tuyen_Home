@@ -86,17 +86,17 @@ export class OrderService {
     const itemIds = dto.items.map((i) => i.menu_item_id)
     const { data: menuItems, error: menuError } = await this.supabase.db
       .from('menu_items')
-      .select('id, price, is_active')
+      .select('id, price, is_active, track_stock, stock')
       .in('id', itemIds)
 
     if (menuError) {
       throw new BadRequestException('Lỗi kiểm tra giá sản phẩm: ' + menuError.message)
     }
 
-    const menuItemsMap = new Map<string, { price: number; is_active: boolean }>(
-      (menuItems || []).map((m: { id: string; price: number; is_active: boolean }) => [
+    const menuItemsMap = new Map<string, { price: number; is_active: boolean; track_stock?: boolean; stock?: number }>(
+      (menuItems || []).map((m: { id: string; price: number; is_active: boolean; track_stock?: boolean; stock?: number }) => [
         m.id,
-        { price: m.price, is_active: m.is_active },
+        { price: m.price, is_active: m.is_active, track_stock: m.track_stock, stock: m.stock },
       ]),
     )
 
@@ -108,6 +108,14 @@ export class OrderService {
       }
       if (dbItem.is_active === false) {
         throw new BadRequestException(`Sản phẩm "${item.name}" hiện không còn phục vụ`)
+      }
+      // Kiểm tra tồn kho nếu bật quản lý kho
+      if (dbItem.track_stock && dbItem.stock !== undefined && dbItem.stock !== null) {
+        if (dbItem.stock < item.quantity) {
+          throw new BadRequestException(
+            `Sản phẩm "${item.name}" không đủ số lượng tồn kho (Còn lại: ${dbItem.stock})`,
+          )
+        }
       }
     }
 
@@ -145,6 +153,21 @@ export class OrderService {
       .single()
 
     if (error) throw new BadRequestException('Lỗi lưu đơn hàng: ' + error.message)
+
+    // 5.1 Trừ tồn kho sản phẩm nếu bật quản lý kho
+    for (const item of dto.items) {
+      const dbItem = menuItemsMap.get(item.menu_item_id)
+      if (dbItem?.track_stock && dbItem.stock !== undefined && dbItem.stock !== null) {
+        const newStock = Math.max(0, dbItem.stock - item.quantity)
+        const { error: stockError } = await this.supabase.db
+          .from('menu_items')
+          .update({ stock: newStock })
+          .eq('id', item.menu_item_id)
+        if (stockError) {
+          console.error(`Lỗi cập nhật tồn kho cho món ${item.menu_item_id}:`, stockError.message)
+        }
+      }
+    }
 
     // 6. Gửi thông báo (fire-and-forget)
     this.sendMessengerNotification(dto, verifiedItems, orderCode, total).catch((err) =>
@@ -376,5 +399,101 @@ export class OrderService {
       version: 'v2',
       content: { messages: [{ type: 'text', text: message }] },
     }
+  }
+
+  async getOrders(shop_slug: string) {
+    if (!shop_slug) {
+      throw new BadRequestException('Thiếu shop_slug')
+    }
+    const { data, error } = await this.supabase.db
+      .from('orders')
+      .select('*')
+      .eq('shop_slug', shop_slug)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw new BadRequestException('Lỗi lấy danh sách đơn hàng: ' + error.message)
+    }
+    return data || []
+  }
+
+  async updateOrderStatus(id: string, status: string) {
+    if (!id) {
+      throw new BadRequestException('Thiếu mã ID đơn hàng')
+    }
+    if (!['pending', 'confirmed', 'done', 'cancelled'].includes(status)) {
+      throw new BadRequestException('Trạng thái đơn hàng không hợp lệ')
+    }
+
+    // 1. Lấy thông tin đơn hàng hiện tại
+    const { data: order, error: fetchError } = await this.supabase.db
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !order) {
+      throw new BadRequestException('Không tìm thấy đơn hàng: ' + (fetchError?.message || ''))
+    }
+
+    const oldStatus = order.status
+
+    // 2. Cập nhật trạng thái
+    const { data: updatedOrder, error: updateError } = await this.supabase.db
+      .from('orders')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      throw new BadRequestException('Lỗi cập nhật trạng thái đơn hàng: ' + updateError.message)
+    }
+
+    // 3. Xử lý tồn kho nếu trạng thái thay đổi
+    // Nếu huỷ đơn (chuyển sang 'cancelled'): cộng trả lại tồn kho
+    if (oldStatus !== 'cancelled' && status === 'cancelled') {
+      const items = (order.items || []) as any[]
+      for (const item of items) {
+        if (!item.menu_item_id) continue
+        // Lấy thông tin món từ DB
+        const { data: dbItem } = await this.supabase.db
+          .from('menu_items')
+          .select('track_stock, stock')
+          .eq('id', item.menu_item_id)
+          .single()
+
+        if (dbItem?.track_stock && dbItem.stock !== undefined && dbItem.stock !== null) {
+          const newStock = dbItem.stock + (item.quantity || 0)
+          await this.supabase.db
+            .from('menu_items')
+            .update({ stock: newStock })
+            .eq('id', item.menu_item_id)
+        }
+      }
+    }
+    // Nếu chuyển từ 'cancelled' sang trạng thái khác: trừ lại tồn kho
+    else if (oldStatus === 'cancelled' && status !== 'cancelled') {
+      const items = (order.items || []) as any[]
+      for (const item of items) {
+        if (!item.menu_item_id) continue
+        // Lấy thông tin món từ DB
+        const { data: dbItem } = await this.supabase.db
+          .from('menu_items')
+          .select('track_stock, stock')
+          .eq('id', item.menu_item_id)
+          .single()
+
+        if (dbItem?.track_stock && dbItem.stock !== undefined && dbItem.stock !== null) {
+          const newStock = Math.max(0, dbItem.stock - (item.quantity || 0))
+          await this.supabase.db
+            .from('menu_items')
+            .update({ stock: newStock })
+            .eq('id', item.menu_item_id)
+        }
+      }
+    }
+
+    return updatedOrder
   }
 }

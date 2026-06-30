@@ -10,6 +10,10 @@ export interface MenuItem {
   category: string
   sub_category?: string | null
   sort_order?: number
+  track_stock?: boolean
+  stock?: number
+  import_price?: number
+  unit?: string | null
 }
 
 async function getMenuItems(slug: string): Promise<MenuItem[]> {

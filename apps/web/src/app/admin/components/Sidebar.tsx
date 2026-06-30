@@ -4,8 +4,8 @@ interface SidebarProps {
   isSidebarOpen: boolean
   setIsSidebarOpen: (open: boolean) => void
   onLogout: () => void
-  activeTab: 'overview' | 'products' | 'reorder'
-  setActiveTab: (tab: 'overview' | 'products' | 'reorder') => void
+  activeTab: 'overview' | 'products' | 'reorder' | 'stock-in' | 'orders'
+  setActiveTab: (tab: 'overview' | 'products' | 'reorder' | 'stock-in' | 'orders') => void
 }
 
 export default function Sidebar({
@@ -15,7 +15,7 @@ export default function Sidebar({
   activeTab,
   setActiveTab,
 }: SidebarProps) {
-  const handleNav = (tab: 'overview' | 'products' | 'reorder') => {
+  const handleNav = (tab: 'overview' | 'products' | 'reorder' | 'stock-in' | 'orders') => {
     setActiveTab(tab)
     setIsSidebarOpen(false)
   }
@@ -60,6 +60,22 @@ export default function Sidebar({
             <span>Báo cáo thống kê</span>
           </button>
 
+          {/* Tab Đơn hàng */}
+          <button
+            onClick={() => handleNav('orders')}
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 text-left w-full cursor-pointer ${
+              activeTab === 'orders'
+                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/10 hover:bg-sky-600'
+                : 'bg-white/60 text-slate-600 hover:bg-white/90 border border-slate-200'
+            }`}
+          >
+            {/* Clipboard list icon */}
+            <svg className="size-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            <span>Quản lý đơn hàng</span>
+          </button>
+
           {/* Tab Sản phẩm */}
           <button
             onClick={() => handleNav('products')}
@@ -74,6 +90,22 @@ export default function Sidebar({
               <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
             <span>Sản phẩm</span>
+          </button>
+
+          {/* Tab Nhập hàng */}
+          <button
+            onClick={() => handleNav('stock-in')}
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 text-left w-full cursor-pointer ${
+              activeTab === 'stock-in'
+                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/10 hover:bg-sky-600'
+                : 'bg-white/60 text-slate-600 hover:bg-white/90 border border-slate-200'
+            }`}
+          >
+            {/* Box Icon with Arrow Down */}
+            <svg className="size-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <span>Nhập hàng</span>
           </button>
 
           {/* Tab Sắp xếp menu */}
